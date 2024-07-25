@@ -9,6 +9,7 @@ import {
 } from "@/widgets/layout";
 import routes from "@/routes";
 import { useMaterialTailwindController, setOpenConfigurator } from "@/context";
+import VehiculeDetail from "@/pages/vehicules/VehiculeDetail";
 
 export function Dashboard() {
   const [controller, dispatch] = useMaterialTailwindController();
@@ -35,13 +36,15 @@ export function Dashboard() {
           <Cog6ToothIcon className="h-5 w-5" />
         </IconButton>
         <Routes>
-          {routes.map(
-            ({ layout, pages }) =>
-              layout === "dashboard" &&
-              pages.map(({ path, element }) => (
-                <Route exact path={path} element={element} />
-              ))
-          )}
+          {routes.map(({ layout, pages }) => {
+            if (layout === "dashboard") {
+              return pages.map(({ path, element }) => (
+                <Route key={path} exact path={path} element={element} />
+              ));
+            }
+            return null;
+          })}
+          <Route path="/vehicules/:matricule" element={<VehiculeDetail />} />
         </Routes>
         <div className="text-blue-gray-600">
           <Footer />
