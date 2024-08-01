@@ -44,7 +44,7 @@ export function Dashboard() {
             }
             return null;
           })}
-          <Route path="/vehicules/:matricule" element={<VehiculeDetail />} />
+          <Route path="/vehicules/:matricule/:edit" element={<VehiculeDetail />} />
         </Routes>
         <div className="text-blue-gray-600">
           <Footer />

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   Input,
@@ -6,8 +6,9 @@ import {
   Button,
   Typography,
 } from "@material-tailwind/react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { register } from "./auth_service";
+import { jwtDecode } from "jwt-decode";
 
 export function SignUp() {
   const [fullName, setFullName] = useState("");
@@ -15,6 +16,18 @@ export function SignUp() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    if (user && token) {
+      const decoded = jwtDecode(token);
+      if (decoded?.exp * 1000 > Date.now()) {
+        navigate("/");
+      }
+    }
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();

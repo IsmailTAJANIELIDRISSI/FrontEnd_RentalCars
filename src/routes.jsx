@@ -55,12 +55,12 @@ export const routes = [
         path: "/notifications",
         element: <Notifications />,
       },
-      {
-        icon: <InformationCircleIcon {...icon} />,
-        name: "vehiculeById",
-        path: "/vehicules/:matricule",
-        element: <VehiculeDetail />,
-      },
+      // {
+      //   icon: <InformationCircleIcon {...icon} />,
+      //   name: "vehiculeById",
+      //   path: "/vehicules/:matricule",
+      //   element: <VehiculeDetail />,
+      // },
     ],
   },
   {

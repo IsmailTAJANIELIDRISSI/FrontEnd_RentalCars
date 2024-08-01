@@ -5,7 +5,7 @@ import {
   Button,
   Typography,
 } from "@material-tailwind/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "./auth_service";
 import { jwtDecode } from "jwt-decode"; // import dependency
@@ -16,6 +16,17 @@ export function SignIn() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate(); // Hook for navigation
+
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    const token = localStorage.getItem("token");
+    if (user && token) {
+      const decoded = jwtDecode(token);
+      if (decoded?.exp * 1000 > Date.now()) {
+        navigate("/");
+      }
+    }
+  }, []);
 
   const handleLogin = () => {
     setLoading(true); // Set loading to true when handling the API response
