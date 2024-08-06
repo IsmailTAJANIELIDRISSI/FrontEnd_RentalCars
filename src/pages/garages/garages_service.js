@@ -1,10 +1,33 @@
-import { locationApi } from "@/environment"
+import { headers, locationApi } from "@/environment";
 
-const headers = {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-}; 
+// export const getGarages = (page = 1, perPage = 10) => {
+//   return locationApi.get(`garages?page=${page}&per_page=${perPage}`, {
+//     headers,
+//   });
+// };
 
-export const getAllGarages = () => {
-    return locationApi.get('/garages')
-}
+export const getGaragesByCriteria = (
+  searchTerm,
+  perPage = 10,
+  currentPage = 1,
+) => {
+  return locationApi.get(
+    "/garages/search",
+    {
+      params: {
+        searchTerm,
+        per_page: perPage,
+        page: currentPage,
+      },
+    },
+    { headers },
+  );
+};
+
+export const addGarage = (garage) => {
+  return locationApi.post("/garages", garage, { headers });
+};
+
+export const editGarage = (idGarage, garageData) => {
+  return locationApi.put(`/garages/${idGarage}`, garageData);
+};

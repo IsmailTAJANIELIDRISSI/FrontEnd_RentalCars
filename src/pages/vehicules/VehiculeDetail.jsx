@@ -6,7 +6,7 @@ import {
   // Input,
   Button,
   IconButton,
-  Select,
+  // Select,
   Option,
 } from "@material-tailwind/react";
 import axios from "axios";
@@ -21,7 +21,12 @@ import { acceptPhotoAttribute, allowedPhotoExtensions } from "@/environment";
 import MatriculeIcon from "@/widgets/icons/MatriculeIcon";
 import { GiGearStickPattern } from "react-icons/gi";
 import { FaGasPump, FaTachometerAlt } from "react-icons/fa";
-import { FileInput, TextInput } from "flowbite-react";
+import {
+  FileInput,
+  TextInput,
+  Select,
+  Button as ButtonFlow,
+} from "flowbite-react";
 
 const VehiculeDetail = () => {
   const { matricule, edit } = useParams();
@@ -183,7 +188,7 @@ const VehiculeDetail = () => {
                       : URL.createObjectURL(photo)
                   }
                   alt={`vehicule photo ${index + 1}`}
-                  className="mt-40 h-full w-full object-cover"
+                  className="mt-60 h-full w-full object-cover"
                 />
               </div>
             ))}
@@ -278,17 +283,25 @@ const VehiculeDetail = () => {
                   Mode de boîte
                 </Typography>
                 <Select
-                  color="blue"
-                  label="Mode de boîte"
+                  // color="blue"
+                  // label="Mode de boîte"
                   name="typeBoite"
                   value={vehicule.modeBoite}
                   defaultValue={vehicule.modeBoite}
-                  onChange={(val) => handleInputChange("modeBoite", val)}
+                  onChange={(e) =>
+                    handleInputChange("modeBoite", e.target.value)
+                  }
                 >
                   {enums.modeBoites.map((mode, index) => (
-                    <Option value={mode} key={index}>
+                    <option
+                      value={mode}
+                      key={index}
+                      selected={
+                        vehicule.modeBoite.toLowerCase() === mode.toLowerCase()
+                      }
+                    >
                       {mode}
-                    </Option>
+                    </option>
                   ))}
                 </Select>
               </div>
@@ -297,15 +310,18 @@ const VehiculeDetail = () => {
                   Type de carburant
                 </Typography>
                 <Select
-                  color="blue"
-                  label="Type de carburant"
+                  // color="blue"
+                  // label="Type de carburant"
                   value={vehicule.typeCarburant}
-                  onChange={(val) => handleInputChange("typeCarburant", val)}
+                  onChange={(e) =>
+                    handleInputChange("typeCarburant", e.target.value)
+                  }
+                  defaultValue={"Manuelle"}
                 >
                   {enums.typeCarburants.map((typeCar, index) => (
-                    <Option key={index} value={typeCar}>
+                    <option key={index} value={typeCar}>
                       {typeCar}
-                    </Option>
+                    </option>
                   ))}
                 </Select>
               </div>
@@ -362,15 +378,17 @@ const VehiculeDetail = () => {
                   Type d'assurance
                 </Typography>
                 <Select
-                  color="blue"
-                  label="Type d'assurance"
+                  // color="blue"
+                  // label="Type d'assurance"
                   value={vehicule.typeAssurance}
-                  onChange={(val) => handleInputChange("typeAssurance", val)}
+                  onChange={(e) =>
+                    handleInputChange("typeAssurance", e.target.value)
+                  }
                 >
                   {enums.typeAssurances.map((typeAss, index) => (
-                    <Option key={index} value={typeAss}>
+                    <option key={index} value={typeAss}>
                       {typeAss}
-                    </Option>
+                    </option>
                   ))}
                 </Select>
               </div>
@@ -389,9 +407,9 @@ const VehiculeDetail = () => {
                 />
               </div>
               <div className="mt-10 flex justify-end">
-                <Button type="submit" color="blue" ripple="light">
+                <ButtonFlow type="submit" color="success" ripple="light">
                   Enregistrer
-                </Button>
+                </ButtonFlow>
               </div>
             </form>
           ) : (

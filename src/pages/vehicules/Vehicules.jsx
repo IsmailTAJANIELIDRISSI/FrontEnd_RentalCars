@@ -1,28 +1,34 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Card,
   CardBody,
   CardHeader,
   CardFooter,
   Typography,
-  Button,
   Dialog,
+  Button,
   DialogHeader,
   DialogBody,
-  // Select,
   Input,
-  option,
   DialogFooter,
 } from "@material-tailwind/react";
+// import { Button as button } from "@material-tailwind/react";
 import { Link } from "react-router-dom";
-import axios from "axios";
-import { addVehicule, deleteVehicule, getVehicules } from "./vehicules_service";
+import { getVehicules, addVehicule, deleteVehicule } from "./vehicules_service";
 import AlertCustomCloseIcon from "@/widgets/alerts/Alert";
-import { CirclePlus, ImageIcon, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import {
+  Button as ButtonFlow,
+  FileInput,
+  Label,
+  Modal,
+  Select,
+  TextInput,
+} from "flowbite-react";
+import { HiCheckCircle, HiXCircle } from "react-icons/hi";
 import { acceptPhotoAttribute, allowedPhotoExtensions } from "@/environment";
-import { FileInput, Label, Select, TextInput } from "flowbite-react";
 
-export function Vehicules() {
+const Vehicules = () => {
   const [vehicules, setVehicules] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [alertOpen, setAlertOpen] = useState(false);
@@ -35,138 +41,131 @@ export function Vehicules() {
     marque: "",
     nomVehicule: "",
     modele: "",
-    typeCarburant: "",
-    modeBoite: "",
+    typeCarburant: "diesel",
+    modeBoite: "manuelle",
     puissance: "",
     nbrSiege: "",
     prixLocation: "",
-    typeAssurance: "",
+    typeAssurance: "RC",
     photos: [],
   });
+  const [openModalSuccess, setOpenModalSuccess] = useState(false);
+  const [openModalError, setOpenModalError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [reload, setReload] = useState(false);
 
   useEffect(() => {
-    getAllVehicules();
+    const fetchData = async () => {
+      try {
+        const res = await getVehicules();
+        setVehicules(res.data.vehicules);
+        setPhotos(res.data.photos);
+      } catch (error) {
+        console.error("Error fetching vehicules:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const getAllVehicules = () => {
-    getVehicules().then((res) => {
-      setVehicules(res.data.vehicules);
-      setPhotos(res.data.photos);
-    });
-  };
-
-  const getPhotoByVehicule = (matricule) => {
-    console.log(vehicules);
-    const photo = photos.find((photo) => photo.matricule === matricule);
-    return photo ? photo.photo : null;
-  };
+  const getPhotoByVehicule = useCallback(
+    (matricule) => {
+      const photo = photos.find((photo) => photo.matricule === matricule);
+      return photo ? photo.photo : null;
+    },
+    [photos],
+  );
 
   const handleDelete = (matricule) => {
     setSelectedVehicule(matricule);
+    // setOpenModalError(true);
     setShowModal(true);
   };
 
   const handleChange = (name, value) => {
-    setVehicule({
-      ...vehicule,
+    setVehicule((prev) => ({
+      ...prev,
       [name]: value,
-    });
+    }));
   };
 
   const handleOpen = () => setOpen(!open);
 
   const handlePhotoUpload = (e) => {
     const { files } = e.target;
-    const validFiles = [];
+    const validFiles = Array.from(files).filter((file) =>
+      allowedPhotoExtensions.includes(
+        file.name.substring(file.name.lastIndexOf(".")).toLowerCase(),
+      ),
+    );
 
-    Array.from(files).forEach((file) => {
-      const fileExtension = file.name
-        .substring(file.name.lastIndexOf("."))
-        .toLowerCase();
-      if (allowedPhotoExtensions.includes(fileExtension)) {
-        validFiles.push(file);
+    setVehicule({ ...vehicule, photos: validFiles });
+    // e.target.value = "";
+    // console.log(validFiles);
+  };
+
+  const confirmDelete = async () => {
+    if (selectedVehicule) {
+      try {
+        await deleteVehicule(selectedVehicule);
+        setVehicules((prev) =>
+          prev.filter((vehicule) => vehicule.matricule !== selectedVehicule),
+        );
+        setShowModal(false);
+        setSelectedVehicule(null);
+        setSuccessMessage("Le véhicule a été supprimé avec succès.");
+        setOpenModalSuccess(true);
+      } catch (error) {
+        setShowModal(false);
+        console.error("Erreur lors de la suppression du véhicule:", error);
+        setErrorMessage(
+          "Désolé, une erreur s'est produite. Veuillez réessayer.",
+        );
+        // setAlertOpen(true);
+        setOpenModalError(true);
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    // console.log(vehicule.photos);
+
+    const formData = new FormData();
+    Object.keys(vehicule).forEach((key) => {
+      if (key === "photos") {
+        vehicule.photos.forEach((photo) => {
+          formData.append("photos[]", photo);
+        });
       } else {
-        e.target.value = ""; // Clear the file input
+        formData.append(key, vehicule[key]);
       }
     });
-
-    if (validFiles.length > 0) {
-      setPhotos(validFiles);
+    console.log(formData);
+    try {
+      await addVehicule(formData);
+      setSuccessMessage("Véhicule ajouté avec succès !");
+      setOpenModalSuccess(true);
+      // setReload(!reload);
+      setVehicule({
+        matricule: "",
+        marque: "",
+        nomVehicule: "",
+        modele: "",
+        typeCarburant: "diesel",
+        modeBoite: "manuelle",
+        puissance: "",
+        nbrSiege: "",
+        prixLocation: "",
+        typeAssurance: "RC",
+        photos: [],
+      });
+    } catch (err) {
+      setErrorMessage("Une erreur s'est produite lors de l'ajout du véhicule.");
+      setOpenModalError(true);
+      console.error(err);
     }
-
-    // Clear the input value to allow the same file to be uploaded again if needed
-    e.target.value = "";
-  };
-
-  const confirmDelete = () => {
-    if (selectedVehicule) {
-      deleteVehicule(selectedVehicule)
-        .then((res) => {
-          setVehicules((prev) =>
-            prev.filter((vehicule) => vehicule.matricule !== selectedVehicule),
-          );
-          setShowModal(false);
-          setSelectedVehicule(null);
-          setAlertMessage("Le véhicule a été supprimé avec succès.");
-          aaaaa;
-          setAlertOpen(true);
-        })
-        .catch((error) => {
-          console.error("Erreur lors de la suppression du véhicule:", error);
-          setAlertMessage(
-            "Désolé, une erreur s'est produite. Veuillez réessayer.",
-          );
-          setAlertOpen(true);
-        });
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    // Create a new FormData object
-    const formData = new FormData();
-
-    // Append each property of the vehicule state to the formData object
-    formData.append("matricule", vehicule.matricule);
-    formData.append("marque", vehicule.marque);
-    formData.append("nomVehicule", vehicule.nomVehicule);
-    formData.append("modele", vehicule.modele);
-    formData.append("typeCarburant", vehicule.typeCarburant);
-    formData.append("modeBoite", vehicule.modeBoite);
-    formData.append("puissance", vehicule.puissance);
-    formData.append("nbrSiege", vehicule.nbrSiege);
-    formData.append("prixLocation", vehicule.prixLocation);
-    formData.append("typeAssurance", vehicule.typeAssurance);
-
-    // Iterate through the photos array and append each file to the formData object
-    photos.forEach((photo) => {
-      formData.append("photos[]", photo);
-    });
-
-    addVehicule(formData).then((res) => {
-      // console.log(res);
-    });
-
-    // Log the formData object for debugging
-    for (let pair of formData.entries()) {
-      console.log(pair[0] + ": " + pair[1]);
-    }
-
-    // Perform the form submission logic here
-    // Example: send the formData to the backend
-    // fetch('/your-backend-endpoint', {
-    //   method: 'POST',
-    //   body: formData,
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //   console.log(data);
-    //   // Handle the response from the backend
-    // });
-
-    // Open the modal or perform any other action
     handleOpen();
   };
 
@@ -248,27 +247,35 @@ export function Vehicules() {
                     <Link
                       to={`/dashboard/vehicules/${vehicule.matricule}/${false}`}
                     >
-                      <Button variant="outlined" size="sm">
+                      <ButtonFlow variant="outlined" size="sm" outline pill>
                         Voir le véhicule
-                      </Button>
+                      </ButtonFlow>
                     </Link>
                     <div className="flex space-x-2">
-                      <Button
+                      <ButtonFlow
+                        pill
                         variant="outlined"
                         size="sm"
-                        color="red"
+                        outline
+                        color="failure"
                         onClick={() => handleDelete(vehicule.matricule)}
                       >
                         Supprimer
-                      </Button>
+                      </ButtonFlow>
                       <Link
                         to={`/dashboard/vehicules/${
                           vehicule.matricule
                         }/${true}`}
                       >
-                        <Button variant="outlined" size="sm" color="blue">
+                        <ButtonFlow
+                          outline
+                          variant="outlined"
+                          size="sm"
+                          color="warning"
+                          pill
+                        >
                           Modifier
-                        </Button>
+                        </ButtonFlow>
                       </Link>
                     </div>
                   </CardFooter>
@@ -279,198 +286,173 @@ export function Vehicules() {
         </CardBody>
       </Card>
 
-      {/* Modal of add vehicule */}
       <Dialog open={open} size="md" handler={handleOpen}>
-        <div className="flex items-center justify-between">
-          <DialogHeader className="flex flex-col items-start">
-            Ajouter un véhicule
-          </DialogHeader>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="mr-3 h-5 w-5 cursor-pointer"
-            onClick={handleOpen}
-          >
-            <path
-              fillRule="evenodd"
-              d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <DialogBody className="h-96 overflow-y-auto">
-            <div className="">
-              <div className="form-group mb-3">
-                <div className="mb-2 block">
-                  <Label htmlFor="matricule" value="Matricule" />
-                </div>
+        <form
+          encType="multipart/form-data"
+          className="flex flex-col gap-4"
+          onSubmit={handleSubmit}
+        >
+          <div className="flex items-center justify-between">
+            <DialogHeader className="flex flex-col items-start">
+              Ajouter un véhicule
+            </DialogHeader>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="mr-3 h-5 w-5 cursor-pointer"
+              onClick={handleOpen}
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 11-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </div>
+          <DialogBody divider className="h-[25rem] overflow-scroll">
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <TextInput
                   required
-                  label="Matricule"
-                  name="matricule"
-                  placeholder="Matricule"
+                  // size="lg"
+                  placeholder="Entrez le matricule"
                   value={vehicule.matricule}
                   onChange={(e) => handleChange("matricule", e.target.value)}
                 />
-              </div>
-              <div className="form-group mb-3">
-                <div className="mb-2 block">
-                  <Label htmlFor="marque" value="Marque" />
-                </div>
                 <TextInput
                   required
-                  label="Marque"
-                  name="marque"
-                  placeholder="Marque"
+                  // size="lg"
+                  placeholder="Entrez la marque"
                   value={vehicule.marque}
                   onChange={(e) => handleChange("marque", e.target.value)}
                 />
               </div>
-              <div className="form-group mb-3">
-                <div className="mb-2 block">
-                  <Label htmlFor="nomVehicule" value="Nom Véhicule" />
-                </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <TextInput
                   required
-                  label="Nom Véhicule"
-                  name="nomVehicule"
-                  placeholder="Nom Véhicule"
+                  // size="lg"
+                  label="Nom"
+                  placeholder="Entrez le nom du véhicule"
                   value={vehicule.nomVehicule}
                   onChange={(e) => handleChange("nomVehicule", e.target.value)}
                 />
-              </div>
-              <div className="form-group mb-3">
-                <div className="mb-2 block">
-                  <Label htmlFor="modele" value="Modèle" />
-                </div>
                 <TextInput
                   required
-                  label="Modèle"
-                  name="modele"
-                  placeholder="Modèle"
+                  // size="lg"
+                  placeholder="Entrez le modèle"
                   value={vehicule.modele}
                   onChange={(e) => handleChange("modele", e.target.value)}
                 />
               </div>
-
-              <div className="form-group mb-3">
-                <div className="mb-2 block">
-                  <Label htmlFor="typeCarburant" value="Type de carburant" />
-                </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <Select
-                  // label="Type Carburant"
-                  // value={vehicule.typeCarburant}
+                  id="typeCarburant"
+                  value={vehicule.typeCarburant}
                   onChange={(e) =>
                     handleChange("typeCarburant", e.target.value)
                   }
                 >
+                  <option value="" disabled>
+                    Sélectionner le type de carburant
+                  </option>
                   <option value="essence">Essence</option>
                   <option value="diesel">Diesel</option>
-                  <option value="hybride">Hybride</option>
-                  <option value="electrique">Électrique</option>
+                  <option value="electrique">Electrique</option>
                 </Select>
-              </div>
-              <div className="form-group mb-3">
-                <div className="mb-2 block">
-                  <Label htmlFor="modeBoite" value="Mode boîte vitesse" />
-                </div>
                 <Select
-                  label="Mode Boîte"
-                  // value={vehicule.modeBoite}
+                  id="modeBoite"
+                  value={vehicule.modeBoite}
                   onChange={(e) => handleChange("modeBoite", e.target.value)}
                 >
+                  <option value="" disabled>
+                    Sélectionner le mode de boîte
+                  </option>
                   <option value="automatique">Automatique</option>
                   <option value="manuelle">Manuelle</option>
                   <option value="hybride">Hybride</option>
                 </Select>
               </div>
-              <div className="form-group mb-3">
-                <div className="mb-2 block">
-                  <Label htmlFor="puissance" value="Puissance" />
-                </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <TextInput
                   required
-                  label="Puissance"
-                  name="puissance"
+                  // size="lg"
                   type="number"
-                  placeholder="Puissance"
+                  placeholder="Entrez la puissance"
                   value={vehicule.puissance}
                   onChange={(e) => handleChange("puissance", e.target.value)}
                 />
-              </div>
-              <div className="form-group mb-3">
-                <div className="mb-2 block">
-                  <Label htmlFor="nbrSiege" value="Nombre de Sièges" />
-                </div>
                 <TextInput
                   required
-                  label="Nombre de Sièges"
-                  name="nbrSiege"
+                  // size="lg"
                   type="number"
-                  placeholder="Nombre de Sièges"
+                  placeholder="Entrez le nombre de sièges"
                   value={vehicule.nbrSiege}
                   onChange={(e) => handleChange("nbrSiege", e.target.value)}
                 />
               </div>
-              <div className="form-group mb-3">
-                <div className="mb-2 block">
-                  <Label htmlFor="prixLocation" value="Prix de Location" />
-                </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <TextInput
                   required
-                  label="Prix de Location"
-                  name="prixLocation"
+                  // size="lg"
                   type="number"
-                  placeholder="Prix de Location"
+                  placeholder="Entrez le prix de location"
                   value={vehicule.prixLocation}
                   onChange={(e) => handleChange("prixLocation", e.target.value)}
                 />
-              </div>
-              <div className="form-group mb-3">
-                <div className="mb-2 block">
-                  <Label htmlFor="typeAssurance" value="Type Assurance" />
-                </div>
                 <Select
-                  // label="Type Assurance"
-                  // value={vehicule.typeAssurance}
+                  id="typeAssurance"
+                  value={vehicule.typeAssurance}
                   onChange={(e) =>
                     handleChange("typeAssurance", e.target.value)
                   }
                 >
+                  <option value="" disabled>
+                    Sélectionner le type d'assurance
+                  </option>
                   <option value="RC">RC</option>
-                  <option value="tout risque">Tout Risque</option>
+                  <option value="tout risque">Tous risques</option>
                 </Select>
               </div>
-              <div className="form-group mb-3">
-                <div className="">
-                  <Label
-                    htmlFor="file_input"
-                    value="Télécharger plusieurs fichiers"
-                  />
-                </div>
+              <div className="">
+                <Label
+                  htmlFor="fileInput"
+                  value="Télécharger plusieurs images"
+                />
                 <FileInput
-                  type="file"
+                  required
+                  id="fileInput"
+                  accept={acceptPhotoAttribute}
                   multiple
                   onChange={handlePhotoUpload}
-                  accept={acceptPhotoAttribute}
-                  className="block w-full cursor-pointer rounded-lg border border-gray-300 bg-gray-50 text-sm text-gray-900"
+                  placeholder="Téléchargez de nouvelles photos
+"
                 />
               </div>
             </div>
           </DialogBody>
           <DialogFooter className="space-x-2">
-            <Button variant="text" color="gray" onClick={handleOpen}>
-              Annuler
-            </Button>
-            <Button variant="gradient" color="blue" type="submit">
+            <ButtonFlow
+              pill
+              // variant="outlined"
+              color="light"
+              // variant="gradient"
+              onClick={handleOpen}
+            >
+              Cancel
+            </ButtonFlow>
+            <ButtonFlow
+              pill
+              variant="gradient"
+              color="blue"
+              type="submit"
+              // onClick={handleSubmit}
+            >
               Ajouter
-            </Button>
+            </ButtonFlow>
           </DialogFooter>
         </form>
       </Dialog>
-      {/* end modal of add  */}
 
       {showModal && (
         <div className="fixed inset-0 z-10 overflow-y-auto">
@@ -568,8 +550,87 @@ export function Vehicules() {
           </div>
         </div>
       )}
+
+      {/* <Modal show={showModal} onClose={() => setShowModal(false)}>
+        <Modal.Header>
+          <HiCheckCircle className="mr-1 h-5 w-5 text-red-500" />
+          <span>Confirmation de suppression</span>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Voulez-vous vraiment supprimer ce véhicule ?</p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={() => setShowModal(false)} color="gray">
+            Annuler
+          </Button>
+          <Button color="red" onClick={confirmDelete}>
+            Supprimer
+          </Button>
+        </Modal.Footer>
+      </Modal> */}
+
+      {/* <Modal show={openModalSuccess} onClose={() => setOpenModalSuccess(false)}>
+        <Modal.Body>
+          <HiCheckCircle className="mr-1 h-5 w-5 text-green-500" />
+          <span>Véhicule ajouté avec succès !</span>
+        </Modal.Body>
+      </Modal> */}
+
+      {/* success message of actions if add or delete */}
+      <Modal
+        show={openModalSuccess}
+        size="md"
+        onClose={() => setOpenModalSuccess(false)}
+        popup
+      >
+        <Modal.Header />
+        <Modal.Body>
+          <div className="text-center">
+            <HiCheckCircle className="mx-auto mb-4 h-14 w-14 text-green-500 dark:text-green-400" />
+            <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+              {/* Véhicule ajouté avec succès ! */}
+              {successMessage}
+            </h3>
+            <div className="flex justify-center gap-4">
+              <Button color="green" onClick={() => setOpenModalSuccess(false)}>
+                Ok
+              </Button>
+            </div>
+          </div>
+        </Modal.Body>
+      </Modal>
+      {/* <SuccessModal
+        openModal={openModalSuccess}
+        message="Véhicule ajouté avec succès !"
+      /> */}
+      {/* END CONFIRMATION MESSAGE SUCCES MODAL */}
+
+      {/* Erreur modal */}
+      <Modal
+        show={openModalError}
+        size="md"
+        onClose={() => setOpenModalError(false)}
+        popup
+      >
+        <Modal.Header />
+        <Modal.Body>
+          <div className="text-center">
+            <HiXCircle className="mx-auto mb-4 h-14 w-14 text-red-500 dark:text-red-400" />
+            <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">
+              {/* Une erreur s'est produite lors de l'ajout du véhicule. */}
+              {errorMessage}
+            </h3>
+            <div className="flex justify-center gap-4">
+              <Button color="red" onClick={() => setOpenModalError(false)}>
+                Ok
+              </Button>
+            </div>
+          </div>
+        </Modal.Body>
+      </Modal>
+      {/* End errur modal */}
     </div>
   );
-}
+};
 
 export default Vehicules;

@@ -1,11 +1,4 @@
-import { locationApi } from "@/environment";
-
-const token = localStorage.getItem("token");
-
-const headers = {
-  "Content-Type": "multipart/form-data",
-  Authorization: `Bearer ${token}`,
-};
+import { locationApi, headers } from "@/environment";
 
 export const getVehicules = () => {
   return locationApi.get("/vehicules", { headers });
