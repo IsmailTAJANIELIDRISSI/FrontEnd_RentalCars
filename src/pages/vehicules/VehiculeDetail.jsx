@@ -26,6 +26,7 @@ import {
   TextInput,
   Select,
   Button as ButtonFlow,
+  Label,
 } from "flowbite-react";
 
 const VehiculeDetail = () => {
@@ -230,6 +231,7 @@ const VehiculeDetail = () => {
                     type="file"
                     multiple
                     className="hidden"
+                    accept={acceptPhotoAttribute}
                     onChange={handlePhotoUpload}
                   />
                 </label>
@@ -247,13 +249,10 @@ const VehiculeDetail = () => {
         <div>
           {editing ? (
             <form onSubmit={handleSubmit}>
-              <Typography variant="h4" className="mb-4">
-                Modifier le véhicule
-              </Typography>
               <div className="mb-4">
-                <Typography variant="h6" className="mb-1">
-                  Marque
-                </Typography>
+                <div className="mb-2 block">
+                  <Label htmlFor="marque" value="Marque" />
+                </div>
                 <TextInput
                   required
                   type="text"
@@ -265,9 +264,9 @@ const VehiculeDetail = () => {
                 />
               </div>
               <div className="mb-4">
-                <Typography variant="h6" className="mb-1">
-                  Modèle
-                </Typography>
+                <div className="mb-2 block">
+                  <Label htmlFor="modele" value="Modèle" />
+                </div>
                 <TextInput
                   required
                   type="text"
@@ -279,12 +278,10 @@ const VehiculeDetail = () => {
                 />
               </div>
               <div className="mb-4">
-                <Typography variant="h6" className="mb-1">
-                  Mode de boîte
-                </Typography>
+                <div className="mb-2 block">
+                  <Label htmlFor="modeBoite" value="Mode de boîte" />
+                </div>
                 <Select
-                  // color="blue"
-                  // label="Mode de boîte"
                   name="typeBoite"
                   value={vehicule.modeBoite}
                   defaultValue={vehicule.modeBoite}
@@ -306,12 +303,11 @@ const VehiculeDetail = () => {
                 </Select>
               </div>
               <div className="mb-4">
-                <Typography variant="h6" className="mb-1">
-                  Type de carburant
-                </Typography>
+                <div className="mb-2 block">
+                  <Label htmlFor="typeCarburant" value="Type de carburant" />
+                </div>
                 <Select
-                  // color="blue"
-                  // label="Type de carburant"
+                  name="typeCarburant"
                   value={vehicule.typeCarburant}
                   onChange={(e) =>
                     handleInputChange("typeCarburant", e.target.value)
@@ -326,9 +322,9 @@ const VehiculeDetail = () => {
                 </Select>
               </div>
               <div className="mb-4">
-                <Typography variant="h6" className="mb-1">
-                  Nombre de sièges
-                </Typography>
+                <div className="mb-2 block">
+                  <Label htmlFor="nbrSiege" value="Nombre de sièges" />
+                </div>
                 <TextInput
                   required
                   type="number"
@@ -342,9 +338,9 @@ const VehiculeDetail = () => {
                 />
               </div>
               <div className="mb-4">
-                <Typography variant="h6" className="mb-1">
-                  Puissance
-                </Typography>
+                <div className="mb-2 block">
+                  <Label htmlFor="puissance" value="Puissance" />
+                </div>
                 <TextInput
                   required
                   type="number"
@@ -358,9 +354,9 @@ const VehiculeDetail = () => {
                 />
               </div>
               <div className="mb-4">
-                <Typography variant="h6" className="mb-1">
-                  Prix de location
-                </Typography>
+                <div className="mb-2 block">
+                  <Label htmlFor="prixLocation" value="Prix de location" />
+                </div>
                 <TextInput
                   required
                   type="number"
@@ -374,12 +370,11 @@ const VehiculeDetail = () => {
                 />
               </div>
               <div className="mb-4">
-                <Typography variant="h6" className="mb-1">
-                  Type d'assurance
-                </Typography>
+                <div className="mb-2 block">
+                  <Label htmlFor="typeAssurance" value="Type d'assurance" />
+                </div>
                 <Select
-                  // color="blue"
-                  // label="Type d'assurance"
+                  name="typeAssurance"
                   value={vehicule.typeAssurance}
                   onChange={(e) =>
                     handleInputChange("typeAssurance", e.target.value)
@@ -393,9 +388,12 @@ const VehiculeDetail = () => {
                 </Select>
               </div>
               <div className="mx-auto mb-4 mt-6 max-w-2xl">
-                <Typography variant="h6" className="mb-1">
-                  Téléchargez de nouvelles photos
-                </Typography>
+                <div className="mb-2 block">
+                  <Label
+                    htmlFor="file_input"
+                    value="Téléchargez de nouvelles photos"
+                  />
+                </div>
                 <FileInput
                   className="block w-full cursor-pointer rounded-lg border border-gray-300 bg-gray-50 text-sm text-gray-900 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:placeholder-gray-400"
                   id="file_input"

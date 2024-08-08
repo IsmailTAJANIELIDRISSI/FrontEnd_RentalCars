@@ -9,7 +9,7 @@ import {
 } from "flowbite-react";
 import { getGaragesByCriteria, addGarage, editGarage } from "./garages_service";
 import { HiCheckCircle, HiXCircle } from "react-icons/hi";
-import ModalMessage from "@/widgets/modals/ModaMessage";
+import ModalMessage from "@/widgets/modals/ModalMessage";
 
 const Garages = () => {
   const [garages, setGarages] = useState([]);
