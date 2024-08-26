@@ -11,6 +11,8 @@ import { SignIn, SignUp } from "@/pages/auth";
 import Vehicules from "./pages/vehicules/Vehicules";
 import VehiculeDetail from "./pages/vehicules/VehiculeDetail";
 import Garages from "./pages/garages/Garages";
+import Reclamations from "./pages/reclamations/Reclamations";
+import Clients from "./pages/clients/Clients";
 
 const icon = {
   className: "w-5 h-5 text-inherit",
@@ -41,14 +43,14 @@ export const routes = [
       {
         icon: <TableCellsIcon {...icon} />,
         name: "Réclamations",
-        path: "/tables",
-        element: <Tables />,
+        path: "/reclamations",
+        element: <Reclamations />,
       },
       {
         icon: <TableCellsIcon {...icon} />,
         name: "Clients",
-        path: "/tables",
-        element: <Tables />,
+        path: "/Clients",
+        element: <Clients />,
       },
       {
         icon: <InformationCircleIcon {...icon} />,
