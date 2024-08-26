@@ -1,5 +1,16 @@
-import { locationApi, headers } from "@/environment";
+import { locationApi } from "@/environment";
 import { format } from "date-fns";
+
+const token = JSON.parse(localStorage.getItem("token"));
+export const headers = {
+  "Content-Type": "multipart/form-data",
+  Authorization: `Bearer ${token}`,
+};
+
+export const headersNormal = {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${token}`,
+};
 
 export const getVehicules = () => {
   return locationApi.get("/vehicules", { headers });
@@ -26,6 +37,7 @@ export const getVehiculesByCriteria = async (
       dateFin: formattedDateFin,
       numReservation,
     },
+    headers,
   });
 };
 

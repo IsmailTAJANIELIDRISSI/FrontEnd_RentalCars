@@ -44,6 +44,8 @@ import {
 import { MdDelete } from "react-icons/md";
 import { getClientById, getClients } from "@/services/clients_service";
 import { statutExpeditionOptions } from "@/environment";
+import { HiOutlinePrinter } from "react-icons/hi";
+import { Link, useNavigate } from "react-router-dom";
 
 // Define the table headers in French
 const TABLE_HEAD = [
@@ -70,6 +72,8 @@ export default function Reservations() {
   const [openModalSuccess, setOpenModalSuccess] = useState(false);
   const [openModalError, setOpenModalError] = useState(false);
   const [reload, setReload] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -879,14 +883,35 @@ export default function Reservations() {
                     />
                   </td>
                   <td className={classes}>
-                    <Typography
-                      variant="small"
-                      color="blue-gray"
-                      className="font-normal"
-                    >
-                      {reservation?.statutExpedition}
-                    </Typography>
+                    <div className="w-max">
+                      <Chip
+                        size="sm"
+                        variant="ghost"
+                        value={reservation?.statutExpedition}
+                        color={
+                          reservation?.statutExpedition === "À préparer"
+                            ? "blue-gray"
+                            : reservation?.statutExpedition === "En préparation"
+                            ? "amber"
+                            : reservation?.statutExpedition ===
+                              "Prêt à être livré"
+                            ? "teal"
+                            : reservation?.statutExpedition ===
+                              "En cours de livraison"
+                            ? "blue"
+                            : reservation?.statutExpedition === "Livré"
+                            ? "green"
+                            : reservation?.statutExpedition ===
+                              "En attente de retour"
+                            ? "red"
+                            : reservation?.statutExpedition === "Récupéré"
+                            ? "purple"
+                            : "gray"
+                        }
+                      />
+                    </div>
                   </td>
+
                   <td className={classes}>
                     <Typography
                       variant="small"
@@ -906,9 +931,13 @@ export default function Reservations() {
                       </IconButton>
                     </Tooltip>
                     <Tooltip content="Imprimer">
-                      <IconButton variant="text">
-                        <ArrowDownTrayIcon className="h-4 w-4" />
-                      </IconButton>
+                      <Link
+                        to={`/invoice/${reservation.numReservation}/${reservation.idClient}/${reservation.matricule}`}
+                      >
+                        <IconButton variant="text">
+                          <HiOutlinePrinter className="h-5 w-5" />
+                        </IconButton>
+                      </Link>
                     </Tooltip>
                   </td>
                 </tr>

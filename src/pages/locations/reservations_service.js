@@ -1,21 +1,29 @@
-import { headers, headersNormal, locationApi } from "@/environment";
+import { locationApi } from "@/environment";
+
+const token = JSON.parse(localStorage.getItem("token"));
+export const headers = {
+  "Content-Type": "multipart/form-data",
+  Authorization: `Bearer ${token}`,
+};
+
+export const headersNormal = {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${token}`,
+};
 
 export const getReservationsByCriteria = (
   searchTerm = "",
   perPage = 10,
   currentPage = 1,
 ) => {
-  return locationApi.get(
-    "/reservations/search",
-    {
-      params: {
-        searchTerm,
-        per_page: perPage,
-        page: currentPage,
-      },
+  return locationApi.get("/reservations/search", {
+    params: {
+      searchTerm,
+      per_page: perPage,
+      page: currentPage,
     },
-    { headers },
-  );
+    headers,
+  });
 };
 
 export const addReservation = (reservation) => {
