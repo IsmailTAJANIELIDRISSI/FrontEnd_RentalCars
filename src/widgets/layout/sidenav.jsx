@@ -8,6 +8,7 @@ import {
   Typography,
 } from "@material-tailwind/react";
 import { useMaterialTailwindController, setOpenSidenav } from "@/context";
+import { v4 as uuidv4 } from "uuid";
 
 export function Sidenav({ brandImg, brandName, routes }) {
   const [controller, dispatch] = useMaterialTailwindController();
@@ -58,8 +59,8 @@ export function Sidenav({ brandImg, brandName, routes }) {
                 </Typography>
               </li>
             )}
-            {pages.map(({ icon, name, path }) => (
-              <li key={name}>
+            {pages.map(({ icon, name, path }, index) => (
+              <li key={index}>
                 <NavLink to={`/${layout}${path}`}>
                   {({ isActive }) => (
                     <Button
@@ -79,7 +80,7 @@ export function Sidenav({ brandImg, brandName, routes }) {
                         color="inherit"
                         className="font-medium capitalize"
                       >
-                        {name} 
+                        {name}
                       </Typography>
                     </Button>
                   )}

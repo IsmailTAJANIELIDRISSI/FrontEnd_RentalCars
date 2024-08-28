@@ -39,7 +39,7 @@ export function SignIn() {
         // Store the token in localStorage
         const { access_token } = res.data;
         const { user } = res.data;
-        localStorage.setItem("token", access_token);
+        localStorage.setItem("token", JSON.stringify(access_token));
         localStorage.setItem("user", JSON.stringify(user));
 
         // Decode the token to get roles

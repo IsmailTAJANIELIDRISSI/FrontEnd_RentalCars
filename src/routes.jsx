@@ -13,6 +13,7 @@ import VehiculeDetail from "./pages/vehicules/VehiculeDetail";
 import Garages from "./pages/garages/Garages";
 import Reclamations from "./pages/reclamations/Reclamations";
 import Clients from "./pages/clients/Clients";
+import Reservations from "./pages/locations/Reservations";
 
 const icon = {
   className: "w-5 h-5 text-inherit",
@@ -57,6 +58,12 @@ export const routes = [
         name: "Garages",
         path: "/garages",
         element: <Garages />,
+      },
+      {
+        icon: <InformationCircleIcon {...icon} />,
+        name: "Locations",
+        path: "/locations",
+        element: <Reservations />,
       },
       // {
       //   icon: <InformationCircleIcon {...icon} />,

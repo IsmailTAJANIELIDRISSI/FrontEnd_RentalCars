@@ -38,9 +38,9 @@ export function Auth() {
         {routes.map(
           ({ layout, pages }) =>
             layout === "auth" &&
-            pages.map(({ path, element }) => (
-              <Route exact path={path} element={element} />
-            ))
+            pages.map(({ path, element }, index) => (
+              <Route exact path={path} element={element} key={index} />
+            )),
         )}
       </Routes>
     </div>

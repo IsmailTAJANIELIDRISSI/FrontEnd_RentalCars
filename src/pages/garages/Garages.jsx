@@ -6,6 +6,8 @@ import {
   Modal,
   Label,
   Pagination,
+  Textarea,
+  HR,
 } from "flowbite-react";
 import { getGaragesByCriteria, addGarage, editGarage } from "./garages_service";
 import { HiCheckCircle, HiXCircle } from "react-icons/hi";
@@ -171,9 +173,9 @@ const Garages = () => {
           </Table.HeadCell>
         </Table.Head>
         <Table.Body className="divide-y">
-          {garages.map((garage) => (
+          {garages.map((garage, index) => (
             <Table.Row
-              key={garage.id}
+              key={index}
               className="bg-white dark:border-gray-700 dark:bg-gray-800"
             >
               <Table.Cell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
@@ -213,68 +215,68 @@ const Garages = () => {
         }}
         popup
       >
-        <Modal.Header />
+        <Modal.Header className="p-4">
+          {isEditing ? "Modifier le garage" : "Ajouter un garage"}
+        </Modal.Header>
+        <HR className="mt-0 pt-0" />
         <Modal.Body>
           <div className="space-y-6">
-            <h3 className="text-xl font-medium text-gray-900 dark:text-white">
-              {isEditing ? "Modifier le garage" : "Ajouter un garage"}
-            </h3>
-            <div>
-              <div className="mb-2 block">
+            {/* <h3 className="text-xl font-medium text-gray-900 dark:text-white"></h3> */}
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
                 <Label htmlFor="nomGarage" value="Nom du Garage" />
-              </div>
-              <TextInput
-                id="nomGarage"
-                name="nomGarage"
-                placeholder="Nom du Garage"
-                value={newGarage.nomGarage}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <div className="mb-2 block">
-                <Label htmlFor="adresseGarage" value="Adresse du Garage" />
-              </div>
-              <TextInput
-                id="adresseGarage"
-                name="adresseGarage"
-                placeholder="Adresse du Garage"
-                value={newGarage.adresseGarage}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <div className="mb-2 block">
-                <Label htmlFor="telephone" value="Téléphone" />
-              </div>
-              <TextInput
-                id="telephone"
-                name="telephone"
-                placeholder="Téléphone"
-                value={newGarage.telephone}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            <div>
-              <div className="mb-2 block">
-                <Label
-                  htmlFor="descriptionGarage"
-                  value="Description du Garage"
+                <TextInput
+                  id="nomGarage"
+                  name="nomGarage"
+                  placeholder="Nom du Garage"
+                  value={newGarage.nomGarage}
+                  onChange={handleInputChange}
+                  required
                 />
               </div>
-              <TextInput
+
+              <div>
+                <Label htmlFor="telephone" value="Téléphone" />
+                <TextInput
+                  id="telephone"
+                  name="telephone"
+                  placeholder="Téléphone"
+                  value={newGarage.telephone}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div className="col-span-2">
+                <Label htmlFor="adresseGarage" value="Adresse du Garage" />
+                <TextInput
+                  id="adresseGarage"
+                  name="adresseGarage"
+                  placeholder="Adresse du Garage"
+                  value={newGarage.adresseGarage}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="col-span-2">
+              <Label htmlFor="descriptionGarage" value="Description Garage" />
+              <Textarea
                 id="descriptionGarage"
                 name="descriptionGarage"
-                placeholder="Description du Garage"
-                value={newGarage.descriptionGarage}
+                placeholder="Garage spécialisé dans l'entretien et la réparation de véhicules toutes marques. Équipe professionnelle et service rapide."
+                rows={6}
                 onChange={handleInputChange}
+                value={newGarage.descriptionGarage}
+                required
               />
             </div>
           </div>
         </Modal.Body>
+        <HR className="m-0 mt-2 pt-0" />
+
         <Modal.Footer className="flex justify-end">
           <Button color="gray" onClick={() => setOpenModal(false)}>
             Annuler

@@ -11,20 +11,12 @@ export const headersNormal = {
   Authorization: `Bearer ${token}`,
 };
 
-// export const getGarages = (page = 1, perPage = 10) => {
-//   return locationApi.get(`garages?page=${page}&per_page=${perPage}`, {
-//     headers,
-//   });
-// };
-
-export const getGaragesByCriteria = (
-  searchTerm,
+export const getReservationsByCriteria = (
+  searchTerm = "",
   perPage = 10,
   currentPage = 1,
 ) => {
-  console.log(headers);
-
-  return locationApi.get("/garages/search", {
+  return locationApi.get("/reservations/search", {
     params: {
       searchTerm,
       per_page: perPage,
@@ -34,12 +26,14 @@ export const getGaragesByCriteria = (
   });
 };
 
-export const addGarage = (garage) => {
-  return locationApi.post("/garages", garage, { headers });
+export const addReservation = (reservation) => {
+  return locationApi.post("/reservations", reservation, { headers });
 };
-
-export const editGarage = (idGarage, garageData) => {
-  return locationApi.put(`/garages/${idGarage}`, garageData, {
+export const getReservationByNumero = (numero) => {
+  return locationApi.get(`/reservations/${numero}`, { headers });
+};
+export const updateReservation = (reservation, numReservation) => {
+  return locationApi.put(`/reservations/${numReservation}`, reservation, {
     headers: headersNormal,
   });
 };

@@ -36,15 +36,18 @@ export function Dashboard() {
           <Cog6ToothIcon className="h-5 w-5" />
         </IconButton>
         <Routes>
-          {routes.map(({ layout, pages }) => {
+          {routes.map(({ layout, pages }, index) => {
             if (layout === "dashboard") {
               return pages.map(({ path, element }) => (
-                <Route key={path} exact path={path} element={element} />
+                <Route key={index} exact path={path} element={element} />
               ));
             }
             return null;
           })}
-          <Route path="/vehicules/:matricule/:edit" element={<VehiculeDetail />} />
+          <Route
+            path="/vehicules/:matricule/:edit"
+            element={<VehiculeDetail />}
+          />
         </Routes>
         <div className="text-blue-gray-600">
           <Footer />

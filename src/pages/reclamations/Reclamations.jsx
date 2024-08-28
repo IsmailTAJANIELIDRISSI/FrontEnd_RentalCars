@@ -1,15 +1,30 @@
 import React, { useState, useEffect } from "react";
-import { Table, TextInput, Pagination, Modal, Button as ButtonFlow, Label, Textarea } from "flowbite-react";
+import {
+  Table,
+  TextInput,
+  Pagination,
+  Modal,
+  Button as ButtonFlow,
+  Label,
+  Textarea,
+} from "flowbite-react";
 import { getReclamation, addReclamation } from "./reclamation_service"; // Assurez-vous d'avoir la fonction addReclamation dans votre service
 import { Plus } from "lucide-react";
 import ModalMessage from "@/widgets/modals/ModalMessage"; // Si vous avez ce composant pour les messages de succès/erreur
+import { CiSearch } from "react-icons/ci";
+import {
+  Card,
+  CardFooter,
+  CardHeader,
+  Typography,
+} from "@material-tailwind/react";
 
 const Reclamations = () => {
   const [reclamations, setReclamations] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [reload,setReload]=useState(false);
+  const [reload, setReload] = useState(false);
   const reclamationsPerPage = 10;
 
   const [openModal, setOpenModal] = useState(false);
@@ -27,7 +42,11 @@ const Reclamations = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await getReclamation(searchTerm, reclamationsPerPage, currentPage);
+        const res = await getReclamation(
+          searchTerm,
+          reclamationsPerPage,
+          currentPage,
+        );
         setReclamations(res.data.data);
         setTotalPages(res.data.last_page);
       } catch (error) {
@@ -36,7 +55,7 @@ const Reclamations = () => {
     };
 
     fetchData();
-  }, [searchTerm, currentPage,reload]);
+  }, [searchTerm, currentPage, reload]);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -53,43 +72,64 @@ const Reclamations = () => {
   };
 
   const handleSubmit = async () => {
-   
-      addReclamation(newReclamation).then(res=>{
+    addReclamation(newReclamation)
+      .then((res) => {
         setSuccessMessage("Réclamation ajoutée avec succès !");
         setOpenModalSuccess(true);
         setNewReclamation({
-        description: "",
-        matriculeVehicule: "",
-        idClient: "",
-        dateReclamation: "",
+          description: "",
+          matriculeVehicule: "",
+          idClient: "",
+          dateReclamation: "",
+        });
+        handleOpenModal();
+        setReload(!reload);
       })
-     handleOpenModal();
-      setReload(!reload);
-    }).catch ((err)=> {
-      setErrorMessage("Une erreur s'est produite lors de l'ajout de la réclamation.");
-      setOpenModalError(true);
-      console.error(err);
-    })
+      .catch((err) => {
+        setErrorMessage(
+          "Une erreur s'est produite lors de l'ajout de la réclamation.",
+        );
+        setOpenModalError(true);
+        console.error(err);
+      });
   };
 
   return (
-    <div className="overflow-x-auto">
-      <div className="mb-4 mt-10 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Liste des réclamations</h1>
-        <ButtonFlow gradientDuoTone="purpleToBlue" className="rounded-full" onClick={handleOpenModal}>
-          <Plus className="mr-2 h-5 w-5" />
-          <span>Ajouter une réclamation</span>
-        </ButtonFlow>
-      </div>
-      <div className="mb-4">
-        <TextInput
-          type="text"
-          placeholder="Rechercher une réclamation par description ou matricule"
-          value={searchTerm}
-          onChange={handleSearch}
-          className="max-w-md"
-        />
-      </div>
+    <Card className="mt-10 h-full w-full ">
+      <CardHeader floated={false} shadow={false} className="rounded-none">
+        <div className="mb-4 mt-1 flex flex-col justify-between gap-8 md:flex-row md:items-center">
+          <div>
+            <Typography variant="h5" color="blue-gray">
+              Liste des réclamations
+            </Typography>
+          </div>{" "}
+          <div className="flex w-full shrink-0 gap-2 md:w-max">
+            <div className="flex w-full gap-2">
+              <TextInput
+                type="text"
+                // value={searchTerm}
+                className="mr-2 rounded"
+                // onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher..."
+                // icon={<MagnifyingGlassIcon className="h-5 w-5" />}
+                value={searchTerm}
+                onChange={handleSearch}
+                icon={CiSearch}
+              />
+              <ButtonFlow
+                className=" flex items-center gap-3"
+                color={"failure"}
+                pill
+                onClick={handleOpenModal}
+              >
+                <Plus className="mr-2 h-5 w-5" />
+                <span>Ajouter une réclamation</span>
+              </ButtonFlow>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+
       <Table>
         <Table.Head>
           <Table.HeadCell>Date de Réclamation</Table.HeadCell>
@@ -113,13 +153,19 @@ const Reclamations = () => {
           ))}
         </Table.Body>
       </Table>
-      <div className="mt-4 flex justify-center">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
-      </div>
+      <CardFooter className=" border-t border-blue-gray-200 bg-blue-gray-50 p-4">
+        {/* <Typography variant="small" color="blue-gray" className="font-normal">
+          {reservations.length} résultats trouvés
+          </Typography> */}
+        <div className="flex justify-center">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            showIcons
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      </CardFooter>
 
       {/* Modal for Adding Reclamation */}
       <Modal show={openModal} onClose={handleOpenModal} size="lg" popup>
@@ -136,11 +182,16 @@ const Reclamations = () => {
               />
             </div>
             <div>
-              <Label htmlFor="matriculeVehicule" value="Matricule du Véhicule" />
+              <Label
+                htmlFor="matriculeVehicule"
+                value="Matricule du Véhicule"
+              />
               <TextInput
                 id="matriculeVehicule"
                 value={newReclamation.matriculeVehicule}
-                onChange={(e) => handleChange("matriculeVehicule", e.target.value)}
+                onChange={(e) =>
+                  handleChange("matriculeVehicule", e.target.value)
+                }
                 required
               />
             </div>
@@ -159,7 +210,9 @@ const Reclamations = () => {
                 id="dateReclamation"
                 type="date"
                 value={newReclamation.dateReclamation}
-                onChange={(e) => handleChange("dateReclamation", e.target.value)}
+                onChange={(e) =>
+                  handleChange("dateReclamation", e.target.value)
+                }
                 required
               />
             </div>
@@ -186,7 +239,7 @@ const Reclamations = () => {
         isSuccess={false}
         message={errorMessage}
       />
-    </div>
+    </Card>
   );
 };
 
