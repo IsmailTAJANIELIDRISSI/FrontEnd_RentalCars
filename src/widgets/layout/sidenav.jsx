@@ -9,6 +9,7 @@ import {
 } from "@material-tailwind/react";
 import { useMaterialTailwindController, setOpenSidenav } from "@/context";
 import { v4 as uuidv4 } from "uuid";
+import { useEffect } from "react";
 
 export function Sidenav({ brandImg, brandName, routes }) {
   const [controller, dispatch] = useMaterialTailwindController();
@@ -18,6 +19,9 @@ export function Sidenav({ brandImg, brandName, routes }) {
     white: "bg-white shadow-sm",
     transparent: "bg-transparent",
   };
+  useEffect(() => {
+    console.log(brandImg);
+  }, []);
 
   return (
     <aside
@@ -26,13 +30,24 @@ export function Sidenav({ brandImg, brandName, routes }) {
       } fixed inset-0 z-50 my-4 ml-4 h-[calc(100vh-32px)] w-72 rounded-xl border border-blue-gray-100 transition-transform duration-300 xl:translate-x-0`}
     >
       <div className={`relative`}>
-        <Link to="/" className="px-8 py-6 text-center">
-          <Typography
+        <Link to="/" className="flex px-8 py-6 text-center">
+          <img
+            src={brandImg} // Use brandImg for the image
+            alt="brand"
+            // className="h-8 w-8"
+            className="mx-auto h-20 w-auto" // Adjust height and width of the logo as needed
+          />
+          {/* <img
+            alt="Brand Logo"
+            className="mx-auto h-12 w-auto" // Adjust height and width of the logo as needed
+          /> */}
+
+          {/* <Typography
             variant="h6"
             color={sidenavType === "dark" ? "white" : "blue-gray"}
           >
             {brandName}
-          </Typography>
+          </Typography> */}
         </Link>
         <IconButton
           variant="text"
@@ -95,8 +110,8 @@ export function Sidenav({ brandImg, brandName, routes }) {
 }
 
 Sidenav.defaultProps = {
-  brandImg: "/img/logo-ct.png",
-  brandName: "Material Tailwind React",
+  brandImg: "public/img/vroum.jpeg",
+  brandName: "VROUM",
 };
 
 Sidenav.propTypes = {

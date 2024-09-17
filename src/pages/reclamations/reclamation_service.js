@@ -1,4 +1,4 @@
-import { locationApi, headers } from "@/environment";
+import { locationApi } from "@/environment";
 
 const token = JSON.parse(localStorage.getItem("token"));
 export const headers = {

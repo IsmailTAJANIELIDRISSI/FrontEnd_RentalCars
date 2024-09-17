@@ -12,8 +12,15 @@ export const headersNormal = {
   Authorization: `Bearer ${token}`,
 };
 
-export const getVehicules = () => {
-  return locationApi.get("/vehicules", { headers });
+export const getVehicules = (searchTerm = "", page, filters) => {
+  return locationApi.get(`/vehicules?page=${page}`, {
+    params: { filters, searchTerm },
+    headers,
+  });
+};
+
+export const getMarques = () => {
+  return locationApi.get("/vehicules-marques", { headers });
 };
 
 export const getVehiculeByMatricule = (matricule) => {
@@ -26,10 +33,10 @@ export const getVehiculesByCriteria = async (
   dateFin,
   numReservation = null,
 ) => {
-  const formattedDate = format(dateDebut, "yyyy-MM-dd");
-  const formattedDateFin = format(dateFin, "yyyy-MM-dd");
-  // console.log(formattedDate);
-  // console.log(formattedDateFin);
+  if (dateDebut || dateFin) {
+    var formattedDate = format(dateDebut, "yyyy-MM-dd");
+    var formattedDateFin = format(dateFin, "yyyy-MM-dd");
+  }
 
   return locationApi.get(`/vehicules/search/${searchTerm}`, {
     params: {

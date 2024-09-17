@@ -29,7 +29,6 @@ const ProtectedRoute = ({ allowedRoles }) => {
     localStorage.clear();
     // localStorage.removeItem("token");
     // localStorage.removeItem("user");
-    console.log("Ana dkhalt l token expired");
     return <Navigate to="/auth/sign-in" replace />;
   }
 

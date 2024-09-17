@@ -2,16 +2,32 @@ import React, { useState, useEffect } from "react";
 import {
   Table,
   TextInput,
-  Button,
+  Button as ButtonFlow,
   Modal,
   Label,
   Pagination,
   Textarea,
   HR,
+  Card,
+  Tooltip,
 } from "flowbite-react";
+import { BsPencilSquare } from "react-icons/bs";
+
+import { FaBuildingShield } from "react-icons/fa6";
+
 import { getGaragesByCriteria, addGarage, editGarage } from "./garages_service";
 import { HiCheckCircle, HiXCircle } from "react-icons/hi";
 import ModalMessage from "@/widgets/modals/ModalMessage";
+import { CardHeader, IconButton, Typography } from "@material-tailwind/react";
+import { CiSearch } from "react-icons/ci";
+import Loading from "@/widgets/loading/Loading";
+
+const initialGarage = {
+  nomGarage: "",
+  adresseGarage: "",
+  telephone: "",
+  descriptionGarage: "",
+};
 
 const Garages = () => {
   const [garages, setGarages] = useState([]);
@@ -21,20 +37,17 @@ const Garages = () => {
   const [openModal, setOpenModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedGarageId, setSelectedGarageId] = useState(null);
-  const [newGarage, setNewGarage] = useState({
-    nomGarage: "",
-    adresseGarage: "",
-    telephone: "",
-    descriptionGarage: "",
-  });
+  const [newGarage, setNewGarage] = useState(initialGarage);
   const [openModalSuccess, setOpenModalSuccess] = useState(false);
   const [openModalError, setOpenModalError] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(true);
   const garagesPerPage = 10;
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const res = await getGaragesByCriteria(
           searchTerm,
@@ -45,6 +58,8 @@ const Garages = () => {
         setTotalPages(res.data.last_page);
       } catch (error) {
         console.error("Error fetching garages:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -59,6 +74,12 @@ const Garages = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewGarage({ ...newGarage, [name]: value });
+  };
+
+  const handleOpenModal = () => {
+    setNewGarage(initialGarage);
+    setIsEditing(false);
+    setOpenModal(!openModal);
   };
 
   const handleAddGarage = () => {
@@ -141,64 +162,92 @@ const Garages = () => {
   };
 
   return (
-    <div className="overflow-x-auto">
-      <div className="mb-4 mt-10 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Liste des garages</h1>
-        <Button
-          onClick={() => {
-            setOpenModal(true);
-            setNewGarage({});
-          }}
-        >
-          Ajouter un garage
-        </Button>
-      </div>
-      <div className="mb-4">
-        <TextInput
-          type="text"
-          placeholder="Rechercher un garage par nom, adresse ou téléphone"
-          value={searchTerm}
-          onChange={handleSearch}
-          className="max-w-md"
-        />
-      </div>
-      <Table>
-        <Table.Head>
-          <Table.HeadCell>Nom du Garage</Table.HeadCell>
-          <Table.HeadCell>Description du Garage</Table.HeadCell>
-          <Table.HeadCell>Adresse</Table.HeadCell>
-          <Table.HeadCell>Téléphone</Table.HeadCell>
-          <Table.HeadCell>
-            <span className="sr-only">Edit</span>
-          </Table.HeadCell>
-        </Table.Head>
-        <Table.Body className="divide-y">
-          {garages.map((garage, index) => (
-            <Table.Row
-              key={index}
-              className="bg-white dark:border-gray-700 dark:bg-gray-800"
-            >
-              <Table.Cell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
-                {garage.nomGarage}
-              </Table.Cell>
-              <Table.Cell>{garage.descriptionGarage}</Table.Cell>
-              <Table.Cell>{garage.adresseGarage}</Table.Cell>
-              <Table.Cell>{garage.telephone}</Table.Cell>
-              <Table.Cell>
-                <a
+    <Card className="mt-10 h-full w-full ">
+      <CardHeader floated={false} shadow={false} className="rounded-none">
+        <div className="mb-4 mt-1 flex flex-col justify-between gap-8 md:flex-row md:items-center">
+          <div>
+            <Typography variant="h5" color="blue-gray">
+              Liste des garages
+            </Typography>
+          </div>{" "}
+          <div className="flex w-full shrink-0 gap-2 md:w-max">
+            <div className="flex w-full gap-2">
+              <TextInput
+                type="text"
+                value={searchTerm}
+                onChange={handleSearch}
+                className="mr-2 rounded"
+                placeholder="Rechercher..."
+                icon={CiSearch}
+              />
+              <ButtonFlow
+                className=" flex items-center gap-3"
+                pill
+                onClick={handleOpenModal}
+                color={"blue"}
+                disabled={loading}
+              >
+                <FaBuildingShield className="mr-2 h-4 w-4" />
+                <span>Ajouter un garage</span>
+              </ButtonFlow>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      {loading ? (
+        <Loading />
+      ) : garages.length === 0 ? (
+        <div className="flex h-full items-center justify-center">
+          <p>Aucun garage n'est disponible au ce moment</p>
+        </div>
+      ) : (
+        <Table>
+          <Table.Head>
+            <Table.HeadCell>Nom du Garage</Table.HeadCell>
+            <Table.HeadCell>Description du Garage</Table.HeadCell>
+            <Table.HeadCell>Adresse</Table.HeadCell>
+            <Table.HeadCell>Téléphone</Table.HeadCell>
+            <Table.HeadCell>
+              <span className="sr-only">Edit</span>
+            </Table.HeadCell>
+          </Table.Head>
+          <Table.Body className="divide-y">
+            {garages.map((garage, index) => (
+              <Table.Row
+                key={index}
+                className="bg-white dark:border-gray-700 dark:bg-gray-800"
+              >
+                <Table.Cell className="whitespace-nowrap font-medium text-gray-900 dark:text-white">
+                  {garage.nomGarage}
+                </Table.Cell>
+                <Table.Cell>{garage.descriptionGarage}</Table.Cell>
+                <Table.Cell>{garage.adresseGarage}</Table.Cell>
+                <Table.Cell>{garage.telephone}</Table.Cell>
+                <Table.Cell>
+                  {/* <a
                   href="#"
                   className="font-medium text-cyan-600 hover:underline dark:text-cyan-500"
-                  onClick={() => handleEditGarage(garage)}
-                >
+                  >
                   Edit
-                </a>
-              </Table.Cell>
-            </Table.Row>
-          ))}
-        </Table.Body>
-      </Table>
+                  </a> */}
+                  <Tooltip content="Modifier">
+                    <IconButton
+                      variant="text"
+                      onClick={() => handleEditGarage(garage)}
+                    >
+                      {/* <PencilIcon className="h-4 w-4" /> */}
+                      <BsPencilSquare className="h-5 w-5 text-orange-500" />
+                    </IconButton>
+                  </Tooltip>
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table>
+      )}
       <div className="mt-4 flex justify-center">
         <Pagination
+          showIcons
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
@@ -225,7 +274,9 @@ const Garages = () => {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <Label htmlFor="nomGarage" value="Nom du Garage" />
+                <div className="mb-2 block">
+                  <Label htmlFor="nomGarage" value="Nom du Garage" />
+                </div>
                 <TextInput
                   id="nomGarage"
                   name="nomGarage"
@@ -237,7 +288,9 @@ const Garages = () => {
               </div>
 
               <div>
-                <Label htmlFor="telephone" value="Téléphone" />
+                <div className="mb-2 block">
+                  <Label htmlFor="telephone" value="Téléphone" />
+                </div>
                 <TextInput
                   id="telephone"
                   name="telephone"
@@ -249,7 +302,9 @@ const Garages = () => {
               </div>
 
               <div className="col-span-2">
-                <Label htmlFor="adresseGarage" value="Adresse du Garage" />
+                <div className="mb-2 block">
+                  <Label htmlFor="adresseGarage" value="Adresse du Garage" />
+                </div>
                 <TextInput
                   id="adresseGarage"
                   name="adresseGarage"
@@ -262,7 +317,9 @@ const Garages = () => {
             </div>
 
             <div className="col-span-2">
-              <Label htmlFor="descriptionGarage" value="Description Garage" />
+              <div className="mb-2 block">
+                <Label htmlFor="descriptionGarage" value="Description Garage" />
+              </div>
               <Textarea
                 id="descriptionGarage"
                 name="descriptionGarage"
@@ -278,12 +335,15 @@ const Garages = () => {
         <HR className="m-0 mt-2 pt-0" />
 
         <Modal.Footer className="flex justify-end">
-          <Button color="gray" onClick={() => setOpenModal(false)}>
+          <ButtonFlow color="gray" onClick={() => setOpenModal(false)}>
             Annuler
-          </Button>
-          <Button onClick={isEditing ? handleEditSubmit : handleAddGarage}>
+          </ButtonFlow>
+          <ButtonFlow
+            color={"blue"}
+            onClick={isEditing ? handleEditSubmit : handleAddGarage}
+          >
             {isEditing ? "Modifier le garage" : "Ajouter le garage"}
-          </Button>
+          </ButtonFlow>
         </Modal.Footer>
       </Modal>
 
@@ -302,7 +362,7 @@ const Garages = () => {
         message={errorMessage}
         isSuccess={false}
       />
-    </div>
+    </Card>
   );
 };
 

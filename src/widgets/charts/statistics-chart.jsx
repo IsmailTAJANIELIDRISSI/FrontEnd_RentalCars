@@ -4,14 +4,46 @@ import {
   CardBody,
   CardFooter,
   Typography,
+  Menu,
+  MenuHandler,
+  IconButton,
+  MenuList,
+  MenuItem,
 } from "@material-tailwind/react";
+import { EllipsisVerticalIcon, SlidersHorizontal } from "lucide-react";
 import PropTypes from "prop-types";
 import Chart from "react-apexcharts";
 
-export function StatisticsChart({ color, chart, title, description, footer }) {
+export function StatisticsChart({
+  color,
+  chart,
+  title,
+  description,
+  footer,
+  // type,
+}) {
   return (
     <Card className="border border-blue-gray-100 shadow-sm">
-      <CardHeader variant="gradient" color={color} floated={false} shadow={false}>
+      <CardHeader
+        variant="gradient"
+        color={color}
+        floated={false}
+        shadow={false}
+      >
+        <div className="flex justify-end">
+          {/* <Menu placement="left-start">
+            <MenuHandler>
+              <IconButton size="sm" variant="text" color="blue-gray">
+                <SlidersHorizontal />
+              </IconButton>
+            </MenuHandler>
+            <MenuList>
+              <MenuItem>Action</MenuItem>
+              <MenuItem>Une autre action</MenuItem>
+              <MenuItem>Quelque chose d'autre ici</MenuItem>
+            </MenuList>
+          </Menu> */}
+        </div>
         <Chart {...chart} />
       </CardHeader>
       <CardBody className="px-6 pt-0">

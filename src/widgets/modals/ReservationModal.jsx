@@ -8,6 +8,7 @@ import {
   List,
   Datepicker,
   Select,
+  Tooltip,
 } from "flowbite-react";
 import { CiSearch } from "react-icons/ci";
 import { MdDelete } from "react-icons/md";
@@ -17,6 +18,8 @@ import { addDays } from "date-fns";
 import ModalMessage from "./ModalMessage";
 import { Avatar } from "@material-tailwind/react";
 import { statutExpeditionOptions } from "@/environment";
+import { IoPersonAdd } from "react-icons/io5";
+import { useNavigate } from "react-router-dom";
 
 export function ReservationModal({
   open,
@@ -47,6 +50,8 @@ export function ReservationModal({
   const [reload, setReload] = useState(false);
 
   const days = Array.from({ length: 30 }, (_, i) => i + 1);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (reservation.dateDebut && reservation.dateFin && reservation.duree) {
@@ -121,7 +126,7 @@ export function ReservationModal({
   const handleClientSelect = (client) => {
     setReservation({ ...reservation, client });
     setShowClientList(false);
-    setClientQuery("");
+    setClientQuery(`${client.nomClient} - ${client.prenomClient}`);
   };
 
   const handleDeleteVehicule = () => {
@@ -163,15 +168,23 @@ export function ReservationModal({
   };
 
   const handleClientSearchInput = (e) => {
-    setClientQuery(e.target.value);
+    const query = e.target.value;
+    setClientQuery(query);
     const filtered = clients.filter(
       (client) =>
-        client.nomClient.toLowerCase().includes(e.target.value.toLowerCase()) ||
-        client.prenomClient
+        client.nomClient.toLowerCase().includes(query.toLowerCase()) ||
+        client.prenomClient.toLowerCase().includes(query.toLowerCase()) ||
+        client.telephone.includes(query) ||
+        client.email.toLowerCase().includes(query.toLowerCase()) ||
+        `${client.nomClient} ${client.prenomClient}`
           .toLowerCase()
-          .includes(e.target.value.toLowerCase()),
+          .includes(query.toLowerCase()),
     );
     setFilteredClients(filtered);
+  };
+
+  const handleAddClient = () => {
+    navigate("/dashboard/clients", { state: { open: true } });
   };
 
   const calculateTotal = (vehicule, dateDebut, dateFin, remise) => {
@@ -377,34 +390,51 @@ export function ReservationModal({
             <div className="mb-2 block">
               <Label htmlFor="client" value="Client" />
             </div>
-            <TextInput
-              id="client"
-              name="client"
-              placeholder="Rechercher un client"
-              icon={CiSearch}
-              required
-              onChange={handleClientSearchInput}
-              value={clientQuery}
-              onFocus={() => setShowClientList(true)}
-              //   onBlur={() => setShowClientList(false)}
-            />
+            <div className="flex items-center space-x-2">
+              <div className="flex w-[140%]">
+                <TextInput
+                  id="client"
+                  name="client"
+                  placeholder="Rechercher un client"
+                  icon={CiSearch}
+                  required
+                  onChange={handleClientSearchInput}
+                  value={clientQuery}
+                  onFocus={() => setShowClientList(true)}
+                  className="w-full"
+                  // onBlur={() => setShowClientList(false)}
+                />
+              </div>
+              <div className="flex justify-center">
+                <Tooltip
+                  content="Ajouter un client"
+                  animation="duration-1000"
+                  arrow={false}
+                >
+                  <Button
+                    color="dark"
+                    className="flex items-center gap-3"
+                    pill
+                    outline
+                    size="sm"
+                    onClick={handleAddClient}
+                  >
+                    <IoPersonAdd className="h-5 w-5" />
+                  </Button>
+                </Tooltip>
+              </div>
+            </div>
+
             {showClientList && (
               <div className="mt-2 max-h-40 overflow-y-auto">
                 {filteredClients.length > 0 ? (
                   filteredClients.map((client, index) => (
-                    // <div
-                    //   key={client.id}
-                    //   className="flex cursor-pointer items-center space-x-2 rounded border p-2 hover:bg-gray-100"
-                    //   onClick={() => handleClientSelect(client)}
-                    // >
-                    //   <span>{`${client.nomClient} ${client.prenomClient}`}</span>
-                    // </div>
                     <div
                       key={index}
                       className="flex cursor-pointer items-center space-x-4 rounded border p-2 hover:bg-gray-100 rtl:space-x-reverse"
                       onClick={() => handleClientSelect(client)}
                     >
-                      {!client.photo ? (
+                      {client.photo ? (
                         <Avatar
                           src={`http://127.0.0.1:8042/storage/files/clients/photos/${client.photo}`}
                           alt={client.nomClient}
@@ -412,7 +442,7 @@ export function ReservationModal({
                           size="sm"
                         />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-500 text-white">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500 text-white">
                           {client.nomClient[0]}
                           {client.prenomClient[0]}
                         </div>
@@ -443,54 +473,6 @@ export function ReservationModal({
               <h4 className="mb-2 text-lg font-medium text-gray-900 dark:text-white">
                 Client sélectionné
               </h4>
-              {/* <Table>
-                <Table.Head>
-                  'nomClient', 'prenomClient', 'photo', 'email',
-                  'dateNaissance', 'telephone' 
-                  <Table.HeadCell>Nom Complet</Table.HeadCell>
-                  <Table.HeadCell>Nom Complet</Table.HeadCell>
-                  <Table.HeadCell>Email</Table.HeadCell>
-                  <Table.HeadCell>Date de naissance</Table.HeadCell>
-                  <Table.HeadCell>Telephone</Table.HeadCell>
-                  <Table.HeadCell>Action</Table.HeadCell>
-                </Table.Head>
-                <Table.Body>
-                  <Table.Row>
-                    <Table.Cell>
-                      <a
-                        href="#"
-                        className="text-blue-500 hover:underline"
-                        onClick={() =>
-                          handleMatriculeClick(reservation.vehicule.matricule)
-                        }
-                      >
-                        {reservation.vehicule.matricule}
-                      </a>
-                    </Table.Cell>
-                    <Table.Cell className="">
-                      <div className="mr-5 flex items-center gap-3">
-                        <img
-                          src={`http://127.0.0.1:8042/storage/files/vehicules/photos/dacia.jpg`}
-                          alt={reservation.vehicule.nomVehicule}
-                          className="h-12 w-12 rounded-md"
-                        />
-                        <span>{reservation.vehicule.nomVehicule}</span>
-                      </div>
-                    </Table.Cell>
-                    <Table.Cell>{reservation.vehicule.marque}</Table.Cell>
-                    <Table.Cell>{reservation.vehicule.modele}</Table.Cell>
-                    <Table.Cell>
-                      {reservation.vehicule.prixLocation} DH / Jour
-                    </Table.Cell>
-                    <Table.Cell>
-                      <MdDelete
-                        onClick={handleDeleteVehicule}
-                        className="cursor-pointer text-red-500 hover:text-red-700"
-                      />
-                    </Table.Cell>
-                  </Table.Row>
-                </Table.Body>
-              </Table> */}
               <List
                 unstyled
                 className="max-w-md divide-y divide-gray-200 dark:divide-gray-700"
@@ -503,7 +485,7 @@ export function ReservationModal({
                         size={20}
                       />
                     </button>
-                    {!reservation.client.photo ? (
+                    {reservation.client.photo ? (
                       <Avatar
                         src={`http://127.0.0.1:8042/storage/files/vehicules/photos/dacia.jpg`}
                         alt={reservation.client.nomClient}
@@ -511,7 +493,7 @@ export function ReservationModal({
                         size="sm"
                       />
                     ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-500 text-white">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500 text-white">
                         {reservation.client.nomClient[0]}
                         {reservation.client.prenomClient[0]}
                       </div>

@@ -45,13 +45,12 @@ export function SignIn() {
         // Decode the token to get roles
         const decodedToken = jwtDecode(access_token);
         const roles = decodedToken.roles;
-        console.log(decodedToken);
 
         // Redirect based on roles
         if (roles.includes(2001)) {
           navigate("/user/home");
         } else if (roles.includes(2000)) {
-          navigate("/admin/dashboard");
+          navigate("/dashboard/accueil");
         }
       })
       .catch((error) => {

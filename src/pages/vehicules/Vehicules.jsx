@@ -6,6 +6,7 @@ import {
   CardFooter,
   Typography,
   IconButton,
+  Button,
 } from "@material-tailwind/react";
 import { Link } from "react-router-dom";
 import {
@@ -13,8 +14,16 @@ import {
   addVehicule,
   deleteVehicule,
   updateVehicule,
+  getMarques,
 } from "./vehicules_service";
-import { Plus, ShieldCheckIcon, UserIcon } from "lucide-react";
+import {
+  EllipsisVerticalIcon,
+  Plus,
+  ShieldCheckIcon,
+  UserIcon,
+} from "lucide-react";
+import { IoIosArrowForward } from "react-icons/io";
+
 import {
   // Button,
   Button as ButtonFlow,
@@ -27,8 +36,20 @@ import {
   Carousel,
   Accordion,
   HR,
+  Drawer,
+  Radio,
+  RangeSlider,
+  Spinner,
 } from "flowbite-react";
-import { HiCheckCircle, HiTrash, HiXCircle } from "react-icons/hi";
+import {
+  HiAdjustments,
+  HiCheckCircle,
+  HiOutlineFilter,
+  HiTrash,
+  HiXCircle,
+} from "react-icons/hi";
+
+import { HiOutlineAdjustmentsVertical } from "react-icons/hi2";
 
 import { acceptPhotoAttribute, allowedPhotoExtensions } from "@/environment";
 import ModalMessage from "@/widgets/modals/ModalMessage";
@@ -43,6 +64,9 @@ import { format } from "date-fns";
 import { CiSearch } from "react-icons/ci";
 import { IoPersonAdd } from "react-icons/io5";
 import { MdAssignmentAdd } from "react-icons/md";
+import InfiniteScroll from "react-infinite-scroll-component";
+import { DynamicRangeSlider } from "@/widgets/range_slider/DynamicRangeSlider";
+import Loading from "@/widgets/loading/Loading";
 
 const initialVehicule = {
   matricule: "",
@@ -58,9 +82,24 @@ const initialVehicule = {
   photos: [],
 };
 
+const initialFilters = {
+  marque: "",
+  modele: "",
+  typeCarburant: "",
+  minPower: "",
+  maxPower: "",
+  nbrSiege: "",
+  minPrice: "",
+  maxPrice: "",
+  typeAssurance: "",
+  modeBoite: "",
+};
+
 const Vehicules = () => {
   const [vehicules, setVehicules] = useState([]);
-  const [photos, setPhotos] = useState([]);
+  // const [photos, setPhotos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [uploadedPhotos, setUploadedPhotos] = useState([]);
   const [removedPhotos, setRemovedPhotos] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -74,51 +113,141 @@ const Vehicules = () => {
   const [isSuccess, setIsSuccess] = useState(true);
   const [reload, setReload] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
   const [vehicule, setVehicule] = useState(initialVehicule);
+  const [marques, setMarques] = useState([]);
+  const [isFilter, setIsFilter] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [filters, setFilters] = useState(initialFilters);
+
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleClose = () => setIsOpen(false);
 
   useEffect(() => {
-    // Fetch vehicles from your backend
-    fetchData();
-  }, [reload]);
+    setLoading(true);
+    const fetchAllData = async () => {
+      try {
+        await getAllMarques();
+        await fetchData();
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAllData();
+  }, [reload, searchTerm]);
+
+  const getAllMarques = async () => {
+    try {
+      const res = await getMarques();
+      const allMarques = Object.entries(res.data.marques).map(
+        ([_, value]) => value,
+      );
+      setMarques(allMarques);
+    } catch (error) {
+      console.error("Error fetching marques:", error);
+    }
+  };
 
   const fetchData = async () => {
     try {
-      const res = await getVehicules();
-      setVehicules(res.data.vehicules);
-      setPhotos(res.data.photos);
-      // Assuming `res.data.vehicules` and `res.data.photos` are arrays
-      const updatedVehicules = res.data.vehicules.map((vehicule) => {
-        // Filter the photos array to find photos that match the vehicle's matricule
-        const matchingPhotos = res.data.photos.filter(
-          (photo) => photo.matricule === vehicule.matricule,
-        );
+      let p = page;
+      const filteredParams = isFilter
+        ? Object.fromEntries(
+            Object.entries(filters).filter(([_, v]) => v != null && v !== ""),
+          )
+        : null;
 
-        // Assign the matching photos to the vehicle
-        return {
-          ...vehicule,
-          photos: matchingPhotos,
-        };
-      });
+      const res = await getVehicules(searchTerm, ++p, filteredParams);
+      const { data: newVehicules } = res.data;
 
-      // Update the state with the updated vehicles list
-      setVehicules(updatedVehicules);
+      if (res.data.current_page == 1) {
+        setVehicules([...newVehicules]);
+      } else {
+        setVehicules([...vehicules, ...newVehicules]);
+      }
+
+      setHasMore(newVehicules.length > 0);
+      setPage(page + 1);
     } catch (error) {
       console.error("Error fetching vehicules:", error);
     }
   };
 
-  const getPhotoByVehicule = useCallback(
-    (matricule) => {
-      const photo = photos.find((photo) => photo.matricule === matricule);
-      return photo ? photo.photo : null;
-    },
-    [photos],
-  );
+  // useEffect(() => {
+  //   // Fetch vehicles from your backend
+  //   getAllMarques();
+  //   fetchData();
+  // }, [reload]);
+
+  // const getAllMarques = () => {
+  //   getMarques().then((res) => {
+  //     const allMarques = Object.entries(res.data.marques).map(
+  //       ([_, value]) => value,
+  //     );
+
+  //     setMarques(allMarques);
+  //   });
+  // };
+
+  // const fetchData = async () => {
+  //   try {
+  //     let p = page;
+  //     if (isFilter) {
+  //       let filteredParams = Object.fromEntries(
+  //         Object.entries(filters).filter(([_, v]) => v != null && v !== ""),
+  //       );
+  //       const res = await getVehicules(++p, filteredParams);
+  //       const { data: newVehicules } = res.data;
+  //       // if (newVehicules.length > 0) {
+  //       if (res.data.current_page == 1) {
+  //         setVehicules([...newVehicules]);
+  //       } else {
+  //         setVehicules([...vehicules, ...newVehicules]);
+  //       }
+  //       // }
+  //       console.log(newVehicules);
+  //       setHasMore(newVehicules.length > 0);
+  //     } else {
+  //       const res = await getVehicules(++p, null);
+  //       const { data: newVehicules } = res.data;
+  //       setVehicules([...vehicules, ...newVehicules]);
+  //       console.log(newVehicules);
+
+  //       setHasMore(newVehicules.length > 0);
+  //     }
+  //     const newPage = page + 1;
+  //     setPage(newPage);
+
+  //     console.log(page);
+  //     // setPage((prevPage) => prevPage + 1);
+
+  //     // Update the state with the updated vehicles list
+  //   } catch (error) {
+  //     console.error("Error fetching vehicules:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleDelete = (matricule) => {
     setSelectedVehicule(matricule);
     setShowModal(true);
+  };
+
+  // Generic change handler
+  const handleChangeDrawer = (e) => {
+    const { name, value } = e.target;
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [name]: value,
+    }));
   };
 
   const handleChange = (name, value) => {
@@ -127,6 +256,7 @@ const Vehicules = () => {
       ...prev,
       [name]: typeof value === "number" ? +value : value,
     }));
+    // setVehicule({...})
   };
 
   const handlePhotoUpload = (e) => {
@@ -149,11 +279,14 @@ const Vehicules = () => {
     });
 
     setUploadedPhotos(updatedPhotos);
+    console.log(validFiles);
 
     e.target.value = "";
   };
 
   const handleDeletePhoto = (index, file) => {
+    console.log(removedPhotos);
+
     if (file.id) {
       setRemovedPhotos([...removedPhotos, file.id]);
     }
@@ -195,6 +328,8 @@ const Vehicules = () => {
   };
 
   const handleOpen = () => {
+    // setUploadedPhotos([]);
+    // setRemovedPhotos([]);
     setOpen(!open);
     setIsEditing(false);
   };
@@ -260,32 +395,8 @@ const Vehicules = () => {
 
     if (isEditing) {
       const formData = new FormData();
-      // console.log(newPhotos);
-      // formData.append("matricule", vehicule.matricule);
-      // formData.append("marque", vehicule.marque);
-      // formData.append("modele", vehicule.modele);
-      // formData.append("modeBoite", vehicule.modeBoite);
-      // formData.append("typeCarburant", vehicule.typeCarburant);
-      // formData.append("nbrSiege", vehicule.nbrSiege);
-      // formData.append("puissance", vehicule.puissance);
-      // formData.append("typeAssurance", vehicule.typeAssurance);
-      // formData.append("prixLocation", vehicule.prixLocation);
-      // removedPhotos.forEach((photo, index) => {
-      //   formData.append(`removedPhotos[${index}]`, photo);
-      // });
-      // formData.append("removedPhotos", removedPhotos);
-
-      // vehicule.photos.forEach((photo) => {
-      //   formData.append("newPhotos[]", photo);
-      // });
-      // log;
 
       const newPhotos = vehicule.photos.filter((file) => !file.id);
-      // setVehicule({
-      //   ...vehicule,
-      //   photos: newPhotos,
-      // });
-      console.log(newPhotos);
 
       Object.keys(vehicule).forEach((key) => {
         if (key === "photos") {
@@ -299,16 +410,27 @@ const Vehicules = () => {
           formData.append(`removedPhotos[${index}]`, photo);
         });
       });
-      console.log(vehicule);
 
       updateVehicule(vehicule.matricule, formData)
         .then(() => {
           setUploadedPhotos([]);
+
+          const newVehicules = vehicules;
+          const find = newVehicules.find(
+            (v) => v.matricule === vehicule.matricule,
+          );
+          if (find) {
+            find.photos = [...find.photos, newPhotos];
+          }
+          console.log(find);
+          setVehicules(newVehicules);
           setIsEditing(false);
           setSuccessMessage("Véhicule modifié avec succès !");
           setOpenModalSuccess(true);
           setVehicule(initialVehicule);
+          setPage(0);
           setReload(!reload);
+          // window.location.reload();
           handleOpen();
         })
         .catch((err) => {
@@ -350,29 +472,53 @@ const Vehicules = () => {
     handleOpen();
   };
 
+  const handleSubmitFilter = (e) => {
+    e.preventDefault();
+    setIsFilter(true);
+    setReload(!reload);
+    setIsOpen(false);
+    setPage(0);
+  };
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+    setPage(0);
+  };
+
   return (
     <Card className="mt-10 h-full w-full ">
       <CardHeader floated={false} shadow={false} className="rounded-none">
         <div className="mb-4 mt-1 flex flex-col justify-between gap-8 md:flex-row md:items-center">
-          <div>
+          <div className="flex items-center gap-4">
             <Typography variant="h5" color="blue-gray">
               Liste des véhicules
             </Typography>
           </div>
           <div className="flex w-full shrink-0 gap-2 md:w-max">
             <div className="flex w-full gap-2">
+              <Button
+                onClick={() => setIsOpen(true)}
+                variant="text"
+                className="flex items-center gap-2 lowercase capitalize"
+              >
+                <HiAdjustments className="h-5 w-5" />
+                Plus de filtres{" "}
+                <IoIosArrowForward className="mb-0.45 h-5 w-5" />
+              </Button>
               <TextInput
                 type="text"
-                // value={searchTerm}
+                value={searchTerm}
+                onChange={handleSearch}
                 className="mr-2 rounded"
-                // onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Rechercher..."
-                // icon={<MagnifyingGlassIcon className="h-5 w-5" />}
                 icon={CiSearch}
+                disabled={loading}
               />
 
               <ButtonFlow
                 onClick={() => {
+                  setRemovedPhotos([]);
+                  setUploadedPhotos([]);
                   handleOpen();
                   setVehicule(initialVehicule);
                 }}
@@ -389,225 +535,143 @@ const Vehicules = () => {
         </div>
       </CardHeader>
       <CardBody className="flex justify-around">
-        <div className="grid-cols- mt-6 grid gap-20 md:grid-cols-2 xl:grid-cols-3">
-          {vehicules.map((vehicule, index) => (
-            <CardFlow className="max-w-md" key={index}>
-              <h5 className="mb-4 text-center text-2xl font-extrabold">
-                {vehicule.marque} {vehicule.modele}
-              </h5>
-
-              <div className="h-56 gap-4 bg-[#374151] bg-black sm:h-64  xl:h-80 2xl:h-60">
-                <Carousel>
-                  {vehicule.photos.map((photo, index) => (
-                    <img
-                      key={index}
-                      // width="200"
-                      // height="200"
-                      src={`http://127.0.0.1:8042/storage/files/vehicules/photos/${photo.photo}`}
-                      alt={`photo de ${vehicule.nomVehicule}`}
-                      // className="w-80"
-                      style={{ width: 300, height: 260 }}
-                    />
-                  ))}
-                </Carousel>
-              </div>
-
-              <Accordion>
-                <Accordion.Panel>
-                  <Accordion.Title>Plus d'information</Accordion.Title>
-                  <Accordion.Content>
-                    <ul className="my-7 space-y-5">
-                      <li className="flex items-center space-x-3">
-                        <UserIcon className="mr-2 h-6 w-6 text-gray-500" />
-                        <span>{vehicule.nbrSiege} sièges</span>
-                      </li>
-                      <li className="flex items-center space-x-3">
-                        <CurrencyDollarIcon className="mr-2 h-6 w-6 text-gray-500" />
-                        <span>{vehicule.prixLocation} DH / jour</span>
-                      </li>
-                      <li className="flex items-center space-x-3">
-                        <ShieldCheckIcon className="mr-2 h-6 w-6 text-gray-500" />
-                        <span>Assurance: {vehicule.typeAssurance}</span>
-                      </li>
-                      <li className="flex items-center space-x-3">
-                        <MatriculeIcon iconClass="mr-2 h-6 w-6 text-gray-500" />
-                        <span>Matricule: {vehicule.matricule}</span>
-                      </li>
-                      <li className="flex items-center space-x-3">
-                        <GiGearStickPattern className="mr-2 h-6 w-6 text-gray-500" />
-                        <span>Mode de boite: {vehicule.modeBoite}</span>
-                      </li>
-                      <li className="flex items-center space-x-3">
-                        <FaGasPump className="mr-2 h-6 w-6 text-gray-500" />
-                        <span>Type de carburant: {vehicule.typeCarburant}</span>
-                      </li>
-                      <li className="flex items-center space-x-3">
-                        <FaTachometerAlt className="mr-2 h-6 w-6 text-gray-500" />
-                        <span>Puissance: {vehicule.puissance}</span>
-                      </li>
-                    </ul>
-                  </Accordion.Content>
-                </Accordion.Panel>
-              </Accordion>
-
-              <div className="mt-6 flex items-center justify-between px-1 py-0">
-                {/* <Link to={`/dashboard/locations`}> */}
-                <ButtonFlow
-                  onClick={() => setOpenModal(true)}
-                  variant="outlined"
-                  size="sm"
-                  pill
-                >
-                  Réserver à un client
-                </ButtonFlow>
-                {/* </Link> */}
-                {/* <Link to={`/dashboard/vehicules/${vehicule.matricule}/${false}`}>
-                <ButtonFlow variant="outlined" size="sm" pill>
-                  Voir le véhicule
-                </ButtonFlow>
-              </Link> */}
-                <div className="flex space-x-2">
-                  <ButtonFlow
-                    pill
-                    variant="outlined"
-                    size="sm"
-                    color="failure"
-                    onClick={() => handleDelete(vehicule.matricule)}
-                  >
-                    Supprimer
-                  </ButtonFlow>
-                  {/* <Link
-                    to={`/dashboard/vehicules/${vehicule.matricule}/${true}`}
-                  > */}
-                  <ButtonFlow
-                    variant="outlined"
-                    size="sm"
-                    color="warning"
-                    pill
-                    onClick={() => {
-                      setVehicule(vehicule);
-                      setOpen(true);
-                      setIsEditing(true);
-                    }}
-                  >
-                    Modifier
-                  </ButtonFlow>
-                  {/* </Link> */}
-                </div>
-              </div>
-            </CardFlow>
-          ))}
-        </div>
-      </CardBody>
-      {/* <Card className="-mt-50 mx-3 mb-6 border border-blue-gray-100 lg:mx-4">
-        <CardHeader
-          variant="gradient"
-          color="gray"
-          className="mb-8 flex justify-between p-6"
-        >
-          <Typography variant="h6" color="white">
-            Liste des véhicules
-          </Typography>
-          <ButtonFlow
-            gradientDuoTone="purpleToBlue"
-            className="rounded-full"
-            onClick={handleOpen}
-            // color="blue"
-            size="sm"
-            // variant="gradient"
+        {loading ? (
+          <Loading />
+        ) : vehicules.length === 0 ? (
+          <div className="flex h-full items-center justify-center">
+            <p>Aucun vehicule n'est disponible au ce moment</p>
+          </div>
+        ) : (
+          <InfiniteScroll
+            dataLength={vehicules.length}
+            next={() => {
+              // setPage((prev) => prev + 1);
+              fetchData();
+            }}
+            hasMore={hasMore}
+            // loader={
+            //   <div className={`flex h-full items-center justify-start`}>
+            //     <Spinner aria-label={"Loading..."} size={"xl"} />
+            //   </div>
+            // }
+            // endMessage={
+            //   <p style={{ textAlign: "center" }}>
+            //     Aucun vehicule n'est disponible au ce moment
+            //   </p>
+            // }
           >
-            <Plus className="mr-2 h-5 w-5" />
-            <span>Ajouter un véhicule</span>
-          </ButtonFlow>
-        </CardHeader>
-        <CardBody className="p-4">
-          <div className="px-4 pb-4">
-            <Typography variant="h6" color="blue-gray" className="mb-2">
-              Vehicles
-            </Typography>
-            <div className="mt-6 grid grid-cols-1 gap-12 md:grid-cols-2 xl:grid-cols-3">
-              {vehicules.map((vehicule) => (
-                <Card
-                  key={vehicule.matricule}
-                  color="transparent"
-                  shadow={false}
-                >
-                  <CardHeader
-                    floated={false}
-                    color="gray"
-                    className="mx-0 mb-4 mt-0 h-64 xl:h-40"
-                  >
-                    <img
-                      src={`http://127.0.0.1:8042/storage/files/vehicules/photos/${getPhotoByVehicule(
-                        vehicule.matricule,
-                      )}`}
-                      alt={vehicule.modele}
-                      className="h-full w-full object-cover"
-                    />
-                  </CardHeader>
-                  <CardBody className="px-1 py-0">
-                    <Typography
-                      variant="small"
-                      className="font-normal text-blue-gray-500"
+            <div className="grid-cols- mt-6 grid gap-20 md:grid-cols-2 xl:grid-cols-3">
+              {vehicules.map((vehicule, index) => (
+                <CardFlow className="max-w-md" key={index}>
+                  <h5 className="mb-4 text-center text-2xl font-extrabold">
+                    {/* {vehicule.marque} {vehicule.modele} */}
+                    {vehicule.nomVehicule}
+                  </h5>
+
+                  <div className="md:w-100 h-56 gap-4 bg-[#374151] sm:h-64  xl:h-80 2xl:h-60">
+                    <Carousel>
+                      {vehicule.photos.map((photo, index) => (
+                        <img
+                          key={index}
+                          src={`http://127.0.0.1:8042/storage/files/vehicules/photos/${photo.photo}`}
+                          alt={`photo de ${vehicule.nomVehicule}`}
+                          style={{ width: 300, height: 260 }}
+                        />
+                      ))}
+                      {/* style={{ width: 300, height: 260 }} */}
+                    </Carousel>
+                  </div>
+
+                  <Accordion>
+                    <Accordion.Panel>
+                      <Accordion.Title>Plus d'information</Accordion.Title>
+                      <Accordion.Content>
+                        <ul className="my-7 space-y-5">
+                          <li className="flex items-center space-x-3">
+                            <UserIcon className="mr-2 h-6 w-6 text-gray-500" />
+                            <span>{vehicule.nbrSiege} sièges</span>
+                          </li>
+                          <li className="flex items-center space-x-3">
+                            <CurrencyDollarIcon className="mr-2 h-6 w-6 text-gray-500" />
+                            <span>{vehicule.prixLocation} DH / jour</span>
+                          </li>
+                          <li className="flex items-center space-x-3">
+                            <ShieldCheckIcon className="mr-2 h-6 w-6 text-gray-500" />
+                            <span>Assurance: {vehicule.typeAssurance}</span>
+                          </li>
+                          <li className="flex items-center space-x-3">
+                            <MatriculeIcon iconClass="mr-2 h-6 w-6 text-gray-500" />
+                            <span>Matricule: {vehicule.matricule}</span>
+                          </li>
+                          <li className="flex items-center space-x-3">
+                            <GiGearStickPattern className="mr-2 h-6 w-6 text-gray-500" />
+                            <span>Mode de boite: {vehicule.modeBoite}</span>
+                          </li>
+                          <li className="flex items-center space-x-3">
+                            <FaGasPump className="mr-2 h-6 w-6 text-gray-500" />
+                            <span>
+                              Type de carburant: {vehicule.typeCarburant}
+                            </span>
+                          </li>
+                          <li className="flex items-center space-x-3">
+                            <FaTachometerAlt className="mr-2 h-6 w-6 text-gray-500" />
+                            <span>Puissance: {vehicule.puissance}</span>
+                          </li>
+                        </ul>
+                      </Accordion.Content>
+                    </Accordion.Panel>
+                  </Accordion>
+
+                  <div className="mt-6 flex items-center justify-between px-1 py-0">
+                    {/* <Link to={`/dashboard/locations`}> */}
+                    <ButtonFlow
+                      onClick={() => setOpenModal(true)}
+                      variant="outlined"
+                      size="sm"
+                      pill
                     >
-                      {vehicule.marque}
-                    </Typography>
-                    <Typography
-                      variant="h5"
-                      color="blue-gray"
-                      className="mb-2 mt-1"
-                    >
-                      {vehicule.modele}
-                    </Typography>
-                    <Typography
-                      variant="small"
-                      className="font-normal text-blue-gray-500"
-                    >
-                      {vehicule.modeBoite}
-                    </Typography>
-                  </CardBody>
-                  <CardFooter className="mt-6 flex items-center justify-between px-1 py-0">
-                    <Link
-                      to={`/dashboard/vehicules/${vehicule.matricule}/${false}`}
-                    >
-                      <ButtonFlow variant="outlined" size="sm" outline pill>
-                        Voir le véhicule
-                      </ButtonFlow>
-                    </Link>
+                      Réserver à un client
+                    </ButtonFlow>
+
                     <div className="flex space-x-2">
                       <ButtonFlow
                         pill
                         variant="outlined"
                         size="sm"
-                        outline
                         color="failure"
                         onClick={() => handleDelete(vehicule.matricule)}
                       >
                         Supprimer
                       </ButtonFlow>
-                      <Link
-                        to={`/dashboard/vehicules/${
-                          vehicule.matricule
-                        }/${true}`}
+                      {/* <Link
+                    to={`/dashboard/vehicules/${vehicule.matricule}/${true}`}
+                  > */}
+                      <ButtonFlow
+                        variant="outlined"
+                        size="sm"
+                        color="warning"
+                        pill
+                        onClick={() => {
+                          setRemovedPhotos([]);
+                          setUploadedPhotos([]);
+                          setVehicule(vehicule);
+                          setOpen(true);
+                          setIsEditing(true);
+                        }}
                       >
-                        <ButtonFlow
-                          outline
-                          variant="outlined"
-                          size="sm"
-                          color="warning"
-                          pill
-                        >
-                          Modifier
-                        </ButtonFlow>
-                      </Link>
+                        Modifier
+                      </ButtonFlow>
+                      {/* </Link> */}
                     </div>
-                  </CardFooter>
-                </Card>
+                  </div>
+                </CardFlow>
               ))}
             </div>
-          </div>
-        </CardBody>
-      </Card> */}
+          </InfiniteScroll>
+        )}
+        {/* {loading && <Loading />} Display loading indicator */}
+      </CardBody>
+
       {/* Modal for Adding or Editing Vehicle */}
       <Modal
         show={open}
@@ -632,6 +696,7 @@ const Vehicules = () => {
                   <Label htmlFor="matricule" value="Matricule" />
                 </div>
                 <TextInput
+                  disabled={isEditing}
                   id="matricule"
                   name="matricule"
                   placeholder="Matricule"
@@ -770,47 +835,48 @@ const Vehicules = () => {
               </div>
 
               {/* display photos uploaded */}
-              {/* display photos uploaded */}
-              <div className="mt-3 grid grid-cols-4 gap-2">
-                {isEditing
-                  ? vehicule.photos.map((photo, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={
-                            photo?.photo
-                              ? `http://127.0.0.1:8042/storage/files/vehicules/photos/${photo.photo}`
-                              : URL.createObjectURL(photo)
-                          }
-                          alt="photo"
-                          className="h-24 w-24 rounded object-cover"
-                        />
-                        <IconButton
-                          className="rounded-full bg-white p-1 text-red-600 shadow"
-                          color="red"
-                          size="sm"
-                          onClick={() => handleDeletePhoto(index, photo)}
-                        >
-                          <HiTrash className="h-5 w-5" />
-                        </IconButton>
-                      </div>
-                    ))
-                  : uploadedPhotos.map((photo, index) => (
-                      <div key={index} className="relative">
-                        <img
-                          src={photo.preview}
-                          alt={`Uploaded preview ${index}`}
-                          className="h-24 w-24 rounded object-cover"
-                        />
-                        <IconButton
-                          className="rounded-full bg-white p-1 text-red-600 shadow"
-                          color="red"
-                          size="sm"
-                          onClick={() => handleDeletePhoto(index, photo)}
-                        >
-                          <HiTrash className="h-5 w-5" />
-                        </IconButton>
-                      </div>
-                    ))}
+              <div className="col-span-2">
+                <div className="mt-3 grid grid-cols-4 place-items-center gap-7">
+                  {isEditing
+                    ? vehicule.photos.map((photo, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={
+                              photo?.id
+                                ? `http://127.0.0.1:8042/storage/files/vehicules/photos/${photo.photo}`
+                                : URL.createObjectURL(photo)
+                            }
+                            alt="photo"
+                            className="h-24 w-24 rounded object-cover"
+                          />
+                          <IconButton
+                            className="rounded-full bg-white p-1 text-red-600 shadow"
+                            color="red"
+                            size="sm"
+                            onClick={() => handleDeletePhoto(index, photo)}
+                          >
+                            <HiTrash className="h-5 w-5" />
+                          </IconButton>
+                        </div>
+                      ))
+                    : uploadedPhotos.map((photo, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={photo.preview}
+                            alt={`Uploaded preview ${index}`}
+                            className="h-24 w-24 rounded object-cover"
+                          />
+                          <IconButton
+                            className="rounded-full bg-white p-1 text-red-600 shadow"
+                            color="red"
+                            size="sm"
+                            onClick={() => handleDeletePhoto(index, photo)}
+                          >
+                            <HiTrash className="h-5 w-5" />
+                          </IconButton>
+                        </div>
+                      ))}
+                </div>
               </div>
 
               <div className="col-span-2 flex w-full items-center justify-center">
@@ -853,19 +919,6 @@ const Vehicules = () => {
                   />
                 </Label>
               </div>
-
-              {/* <div>
-              <Label htmlFor="photos" value="Photos" />
-              <FileInput
-                id="photos"
-                accept={acceptPhotoAttribute}
-                multiple
-                onChange={handlePhotoUpload}
-              />
-            </div> */}
-              {/* <ButtonFlow type="submit" color="blue" size="md">
-              {vehicule.matricule ? "Modifier" : "Ajouter"}
-            </ButtonFlow> */}
             </div>
           </div>
         </Modal.Body>
@@ -905,6 +958,191 @@ const Vehicules = () => {
         onClose={() => setOpenModal(false)}
         onSave={handleSaveReservation}
       />
+
+      {/* drawer */}
+      <Drawer open={isOpen} onClose={handleClose} position="right">
+        <Drawer.Header
+          title="Filtrer votre recherche"
+          titleIcon={HiOutlineFilter}
+        />
+        <Drawer.Items>
+          <form onSubmit={handleSubmitFilter}>
+            {/* Marque (marque Select) */}
+            <div className="flex justify-end">
+              <ButtonFlow
+                color="gray"
+                className="border-none"
+                onClick={() => setFilters(initialFilters)}
+              >
+                Effacer
+              </ButtonFlow>
+            </div>
+            <div className="mb-6 mt-3">
+              <Label htmlFor="marque" className="mb-2 block">
+                Marque - Modèle
+              </Label>
+              <Select
+                id="marque"
+                name="marque"
+                value={filters.marque}
+                onChange={handleChangeDrawer}
+                required
+              >
+                {marques.map((marque, key) => (
+                  <option key={key} value={marque}>
+                    {marque}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="mb-6 mt-3">
+              <Label htmlFor="modele" className="mb-2 block">
+                Année - Modèle
+              </Label>
+              <Select
+                id="modele"
+                name="modele"
+                value={filters.modele}
+                onChange={handleChangeDrawer}
+                required
+              >
+                {Array.from(
+                  { length: 2024 - 1980 + 1 },
+                  (_, i) => 1980 + i,
+                ).map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {/* Type Carburant */}
+            <div className="mb-6">
+              <Label htmlFor="typeCarburant" className="mb-2 block">
+                Type de carburant
+              </Label>
+              <div className="flex flex-col gap-2">
+                {["Essence", "Diesel", "Hybride", "Électrique"].map(
+                  (fuel, index) => (
+                    <div className="flex items-center gap-2" key={index}>
+                      <Radio
+                        id={fuel.toLowerCase()}
+                        name="typeCarburant"
+                        value={fuel.toLowerCase()}
+                        checked={filters.typeCarburant === fuel.toLowerCase()}
+                        onChange={handleChangeDrawer}
+                      />
+                      <Label htmlFor={fuel.toLowerCase()}>{fuel}</Label>
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+
+            {/* Puissance */}
+            <div className="mb-6">
+              <Label htmlFor="puissance" className="mb-2 block">
+                Puissance (CV)
+              </Label>
+              <div className="flex gap-4">
+                <TextInput
+                  id="minPower"
+                  name="minPower"
+                  placeholder="Min Puissance"
+                  type="number"
+                  min="0"
+                  value={filters.minPower}
+                  onChange={handleChangeDrawer}
+                />
+                <TextInput
+                  id="maxPower"
+                  name="maxPower"
+                  placeholder="Max Puissance"
+                  type="number"
+                  min="0"
+                  value={filters.maxPower}
+                  onChange={handleChangeDrawer}
+                />
+              </div>
+            </div>
+
+            {/* Nombre de Sièges */}
+            <div className="mb-6">
+              <Label htmlFor="nbrSiege" className="mb-2 block">
+                Nombre de sièges
+              </Label>
+              <TextInput
+                id="nbrSiege"
+                name="nbrSiege"
+                placeholder="4"
+                type="number"
+                min="1"
+                max="10"
+                value={filters.nbrSiege}
+                onChange={handleChangeDrawer}
+              />
+            </div>
+
+            {/* Prix Location */}
+            <div className="mb-6">
+              <Label htmlFor="prixLocation" className="mb-2 block">
+                Prix de location
+              </Label>
+              <div className="flex gap-4">
+                <TextInput
+                  id="minPrix"
+                  name="minPrice"
+                  placeholder="Min Prix"
+                  type="number"
+                  min="0"
+                  value={filters.minPrice}
+                  onChange={handleChangeDrawer}
+                />
+                <TextInput
+                  id="maxPrix"
+                  name="maxPrice"
+                  placeholder="Max Prix"
+                  type="number"
+                  min="0"
+                  value={filters.maxPrice}
+                  onChange={handleChangeDrawer}
+                />
+              </div>
+            </div>
+
+            {/* Type Assurance */}
+            <div className="mb-6">
+              <Label htmlFor="typeAssurance" className="mb-2 block">
+                Type d'assurance
+              </Label>
+              <div className="flex flex-col gap-2">
+                {["RC", "Tous risques"].map((assurance, index) => (
+                  <div className="flex items-center gap-2" key={index}>
+                    <Radio
+                      id={assurance.replace(" ", "").toLowerCase()}
+                      name="typeAssurance"
+                      value={assurance.toLowerCase()}
+                      checked={
+                        filters.typeAssurance === assurance.toLowerCase()
+                      }
+                      onChange={handleChangeDrawer}
+                    />
+                    <Label htmlFor={assurance.replace(" ", "").toLowerCase()}>
+                      {assurance}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <ButtonFlow type="submit" className="w-full">
+              Afficher véhicules
+            </ButtonFlow>
+          </form>
+        </Drawer.Items>
+      </Drawer>
     </Card>
   );
 };

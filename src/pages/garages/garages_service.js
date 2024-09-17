@@ -22,7 +22,6 @@ export const getGaragesByCriteria = (
   perPage = 10,
   currentPage = 1,
 ) => {
-  console.log(headers);
 
   return locationApi.get("/garages/search", {
     params: {

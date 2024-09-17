@@ -48,13 +48,14 @@ import { statutExpeditionOptions } from "@/environment";
 import { HiOutlinePrinter } from "react-icons/hi";
 import { Link, useNavigate } from "react-router-dom";
 import { getClientById } from "../clients/clients_service";
+import Loading from "@/widgets/loading/Loading";
 
 // Define the table headers in French
 const TABLE_HEAD = [
   "Numéro de réservation",
   "Véhicule",
   "Client",
-  "Statut du paiement",
+  // "Statut du paiement",
   "Statut d'expédition",
   "Total",
   "Action",
@@ -73,11 +74,13 @@ export default function Reservations() {
   const [errorMessage, setErrorMessage] = useState(null);
   const [openModalSuccess, setOpenModalSuccess] = useState(false);
   const [openModalError, setOpenModalError] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [reload, setReload] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
     const fetchReservations = async () => {
       try {
         const response = await getReservationsByCriteria(
@@ -89,6 +92,8 @@ export default function Reservations() {
         setTotalPages(response.data.last_page); // Assuming 'last_page' is provided in the API response
       } catch (error) {
         console.error("Failed to fetch reservations:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -103,8 +108,6 @@ export default function Reservations() {
   };
 
   const handleEditReservation = (reservation) => {
-    console.log(reservation);
-
     setIsEditing(true);
     setSelectedReservation(reservation);
     setOpenEditModal(true);
@@ -156,6 +159,10 @@ export default function Reservations() {
     }
   };
 
+  const handleAddClient = () => {
+    navigate("/dashboard/clients", { state: { open: true } });
+  };
+
   const EditReservationModal = ({ open, onClose, reservationData, onSave }) => {
     const [dateDebut, setDateDebut] = useState(
       reservationData
@@ -187,7 +194,7 @@ export default function Reservations() {
     const [clientQuery, setClientQuery] = useState("");
     const [showVehiculeList, setShowVehiculeList] = useState(false);
     const [showClientList, setShowClientList] = useState(false);
-    const [duree, setDuree] = useState(0);
+    const [duree, setDuree] = useState(1);
     const [errorMessage, setErrorMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [vehicules, setVehicules] = useState([]);
@@ -251,7 +258,7 @@ export default function Reservations() {
             const vehiculesData = res.data?.vehiculesNotReserved || [];
             setVehicules(vehiculesData);
             setFilteredVehicules(vehiculesData);
-            setSelectedVehicule(null);
+            // setSelectedVehicule(null);
             setShowSearch(true);
             // setVehicules([]);
           })
@@ -286,11 +293,11 @@ export default function Reservations() {
     const handleClientSelect = (client) => {
       setSelectedClient(client);
       setShowClientList(false);
-      setClientQuery("");
+      setClientQuery(`${client.nomClient} ${client.prenomClient}`);
     };
 
     const handleDeleteVehicule = () => {
-      setTotal("");
+      setMontant("");
       setSelectedVehicule(null);
     };
 
@@ -311,15 +318,17 @@ export default function Reservations() {
     };
 
     const handleClientSearchInput = (e) => {
-      setClientQuery(e.target.value);
+      const query = e.target.value;
+      setClientQuery(query);
       const filtered = clients.filter(
         (client) =>
-          client.nomClient
+          client.nomClient.toLowerCase().includes(query.toLowerCase()) ||
+          client.prenomClient.toLowerCase().includes(query.toLowerCase()) ||
+          client.telephone.includes(query) ||
+          client.email.toLowerCase().includes(query.toLowerCase()) ||
+          `${client.nomClient} ${client.prenomClient}`
             .toLowerCase()
-            .includes(e.target.value.toLowerCase()) ||
-          client.prenomClient
-            .toLowerCase()
-            .includes(e.target.value.toLowerCase()),
+            .includes(query.toLowerCase()),
       );
       setFilteredClients(filtered);
     };
@@ -343,8 +352,6 @@ export default function Reservations() {
         !selectedVehicule ||
         !selectedClient
       ) {
-        console.log("empty some info");
-
         setErrorMessage("Veuillez remplir tous les champs obligatoires.");
         setOpenModalError(true);
         return;
@@ -362,7 +369,6 @@ export default function Reservations() {
         remise: remise,
         statutExpedition: statutExpedition,
       };
-      console.log(updatedReservation);
       onSave(updatedReservation);
       // onSave(updatedReservation)
       //   .then(() => {
@@ -501,17 +507,7 @@ export default function Reservations() {
                   </Table.Head>
                   <Table.Body>
                     <Table.Row>
-                      <Table.Cell>
-                        <a
-                          href="#"
-                          className="text-blue-500 hover:underline"
-                          onClick={() =>
-                            handleMatriculeClick(selectedVehicule.matricule)
-                          }
-                        >
-                          {selectedVehicule.matricule}
-                        </a>
-                      </Table.Cell>
+                      <Table.Cell>{selectedVehicule.matricule}</Table.Cell>
                       <Table.Cell className="">
                         <div className="mr-5 flex items-center gap-3">
                           {/* <img
@@ -576,15 +572,19 @@ export default function Reservations() {
                         className="flex cursor-pointer items-center space-x-4 rounded border p-2 hover:bg-gray-100 rtl:space-x-reverse"
                         onClick={() => handleClientSelect(client)}
                       >
-                        {!client.photo ? (
+                        {client.photo ? (
                           <Avatar
                             src={`http://127.0.0.1:8042/storage/files/clients/photos/${client.photo}`}
                             alt={client.nomClient}
-                            rounded
+                            rounded="true"
                             size="sm"
                           />
                         ) : (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-500 text-white">
+                          // <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-500 text-white">
+                          //   {client.nomClient[0]}
+                          //   {client.prenomClient[0]}
+                          // </div>
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500 text-white">
                             {client.nomClient[0]}
                             {client.prenomClient[0]}
                           </div>
@@ -627,15 +627,15 @@ export default function Reservations() {
                           size={20}
                         />
                       </button>
-                      {!selectedClient.photo ? (
+                      {selectedClient.photo ? (
                         <Avatar
                           src={`http://127.0.0.1:8042/storage/files/vehicules/photos/dacia.jpg`}
                           alt={selectedClient.nomClient}
-                          rounded
+                          rounded="true"
                           size="sm"
                         />
                       ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-500 text-white">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-500 text-white">
                           {selectedClient.nomClient[0]}
                           {selectedClient.prenomClient[0]}
                         </div>
@@ -782,12 +782,14 @@ export default function Reservations() {
                 placeholder="Rechercher..."
                 // icon={<MagnifyingGlassIcon className="h-5 w-5" />}
                 icon={CiSearch}
+                disabled={loading}
               />
               <ButtonFlow
                 className="flex items-center gap-3"
                 color="dark"
                 pill
                 // size="sm"
+                onClick={handleAddClient}
               >
                 <IoPersonAdd className="mr-2 h-4 w-4" />
                 Ajouter un client
@@ -806,105 +808,116 @@ export default function Reservations() {
         </div>
       </CardHeader>
       <CardBody className="overflow-x-auto px-0 pt-0">
-        <table className="w-full min-w-max table-auto text-left">
-          <thead>
-            <tr>
-              {TABLE_HEAD.map((head, index) => (
-                <th
-                  key={index}
-                  className={`border-b border-blue-gray-100 bg-blue-gray-50 p-4 ${
-                    head === "Action" ? "text-center" : ""
-                  }`}
-                >
-                  <Typography
-                    variant="small"
-                    color="blue-gray"
-                    className="font-normal leading-none opacity-70"
+        {loading ? (
+          <Loading />
+        ) : reservations.length === 0 ? (
+          <div className="flex h-full items-center justify-center">
+            <p>Aucun resérvation n'est disponible au ce moment</p>
+          </div>
+        ) : (
+          <table className="w-full min-w-max table-auto text-left">
+            <thead>
+              <tr>
+                {TABLE_HEAD.map((head, index) => (
+                  <th
+                    key={index}
+                    className={`border-b border-blue-gray-100 bg-blue-gray-50 p-4 ${
+                      head === "Action" ? "text-center" : ""
+                    }`}
                   >
-                    {head}
-                  </Typography>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {reservations.map((reservation, index) => {
-              const isLast = index === reservations.length - 1;
-              const classes = isLast
-                ? "p-4"
-                : "p-4 border-b border-blue-gray-50";
-              return (
-                <tr key={index}>
-                  <td className={classes}>
                     <Typography
                       variant="small"
                       color="blue-gray"
-                      className="font-bold"
+                      className="font-normal leading-none opacity-70"
                     >
-                      {reservation.numReservation}
+                      {head}
                     </Typography>
-                  </td>
-                  <td className={`${classes}`}>
-                    <div className="flex items-center gap-3">
-                      <Avatar
-                        src={`http://127.0.0.1:8042/storage/files/vehicules/photos/${reservation.photo}`}
-                        alt={"ee"}
-                        // size="md"
-                        variant="rounded"
-                        // className="border border-blue-gray-50 bg-blue-gray-50/50 object-contain p-1"
-                      />
-
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {reservations.map((reservation, index) => {
+                const isLast = index === reservations.length - 1;
+                const classes = isLast
+                  ? "p-4"
+                  : "p-4 border-b border-blue-gray-50";
+                return (
+                  <tr key={index}>
+                    <td className={classes}>
                       <Typography
                         variant="small"
                         color="blue-gray"
                         className="font-bold"
                       >
-                        {reservation.nomVehicule}
+                        {reservation.numReservation}
                       </Typography>
-                    </div>
-                  </td>
-                  <td>
-                    {/* <Typography
+                    </td>
+                    <td className={`${classes}`}>
+                      <div className="flex items-center gap-3">
+                        <Avatar
+                          src={
+                            reservation.photo
+                              ? `http://127.0.0.1:8042/storage/files/vehicules/photos/${reservation.photo}`
+                              : `http://127.0.0.1:8042/storage/files/vehicules/photos/dacia.jpg`
+                          }
+                          alt={"ee"}
+                          // size="md"
+                          variant="rounded"
+                          // className="border border-blue-gray-50 bg-blue-gray-50/50 object-contain p-1"
+                        />
+
+                        <Typography
+                          variant="small"
+                          color="blue-gray"
+                          className="font-bold"
+                        >
+                          {reservation.nomVehicule}
+                        </Typography>
+                      </div>
+                    </td>
+                    <td>
+                      {/* <Typography
                         variant="small"
                         color="blue-gray"
                         className="font-normal"
                       >
                         {prenomClient} {nomClient}
                       </Typography> */}
-                    <div className="flex items-center gap-4">
-                      {!reservation.photo ? (
-                        <Avatar
-                          src={`http://127.0.0.1:8042/storage/files/clients/photos/${reservation.photo}`}
-                          alt={reservation.nomClient}
-                          rounded
-                          size="sm"
-                        />
-                      ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-500 text-white">
-                          {reservation.nomClient[0]}
-                          {reservation.prenomClient[0]}
-                        </div>
-                      )}
-                      {/* <Avatar
+                      <div className="flex items-center gap-4">
+                        {!reservation.photo ? (
+                          <Avatar
+                            src={`http://127.0.0.1:8042/storage/files/clients/photos/${reservation.photo}`}
+                            alt={reservation.nomClient}
+                            rounded="true"
+                            size="sm"
+                          />
+                        ) : (
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-500 text-white">
+                            {reservation.nomClient[0]}
+                            {reservation.prenomClient[0]}
+                          </div>
+                        )}
+                        {/* <Avatar
                           src="https://docs.material-tailwind.com/img/face-2.jpg"
                           alt="avatar"
                           size="md"
                         /> */}
-                      <div>
-                        <Typography variant="h6">
-                          {reservation.nomClient} {reservation.prenomClient}
-                        </Typography>
-                        <Typography
-                          variant="small"
-                          color="gray"
-                          className="font-normal"
-                        >
-                          {reservation.telephone}
-                        </Typography>
+                        <div>
+                          <Typography variant="h6">
+                            {reservation.nomClient} {reservation.prenomClient}
+                          </Typography>
+                          <Typography
+                            variant="small"
+                            color="gray"
+                            className="font-normal"
+                          >
+                            {reservation.telephone}
+                          </Typography>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className={classes}>
+                    </td>
+                    {/* <td className={classes}>
                     <Chip
                       size="sm"
                       variant="ghost"
@@ -917,70 +930,72 @@ export default function Reservations() {
                           : "red"
                       }
                     />
-                  </td>
-                  <td className={classes}>
-                    <div className="w-max">
-                      <Chip
-                        size="sm"
-                        variant="ghost"
-                        value={reservation?.statutExpedition}
-                        color={
-                          reservation?.statutExpedition === "À préparer"
-                            ? "blue-gray"
-                            : reservation?.statutExpedition === "En préparation"
-                            ? "amber"
-                            : reservation?.statutExpedition ===
-                              "Prêt à être livré"
-                            ? "teal"
-                            : reservation?.statutExpedition ===
-                              "En cours de livraison"
-                            ? "blue"
-                            : reservation?.statutExpedition === "Livré"
-                            ? "green"
-                            : reservation?.statutExpedition ===
-                              "En attente de retour"
-                            ? "red"
-                            : reservation?.statutExpedition === "Récupéré"
-                            ? "purple"
-                            : "gray"
-                        }
-                      />
-                    </div>
-                  </td>
+                  </td> */}
+                    <td className={classes}>
+                      <div className="w-max">
+                        <Chip
+                          size="sm"
+                          variant="ghost"
+                          value={reservation?.statutExpedition}
+                          color={
+                            reservation?.statutExpedition === "À préparer"
+                              ? "blue-gray"
+                              : reservation?.statutExpedition ===
+                                "En préparation"
+                              ? "amber"
+                              : reservation?.statutExpedition ===
+                                "Prêt à être livré"
+                              ? "teal"
+                              : reservation?.statutExpedition ===
+                                "En cours de livraison"
+                              ? "blue"
+                              : reservation?.statutExpedition === "Livré"
+                              ? "green"
+                              : reservation?.statutExpedition ===
+                                "En attente de retour"
+                              ? "red"
+                              : reservation?.statutExpedition === "Récupéré"
+                              ? "purple"
+                              : "gray"
+                          }
+                        />
+                      </div>
+                    </td>
 
-                  <td className={classes}>
-                    <Typography
-                      variant="small"
-                      color="blue-gray"
-                      className="font-normal"
-                    >
-                      {reservation.montant} DH
-                    </Typography>
-                  </td>
-                  <td className={`${classes} text-center`}>
-                    <Tooltip content="Modifier">
-                      <IconButton
-                        variant="text"
-                        onClick={() => handleEditReservation(reservation)}
+                    <td className={classes}>
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-normal"
                       >
-                        <PencilIcon className="h-4 w-4" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip content="Imprimer">
-                      <Link
-                        to={`/invoice/${reservation.numReservation}/${reservation.idClient}/${reservation.matricule}`}
-                      >
-                        <IconButton variant="text">
-                          <HiOutlinePrinter className="h-5 w-5" />
+                        {reservation.montant} DH
+                      </Typography>
+                    </td>
+                    <td className={`${classes} text-center`}>
+                      <Tooltip content="Modifier">
+                        <IconButton
+                          variant="text"
+                          onClick={() => handleEditReservation(reservation)}
+                        >
+                          <PencilIcon className="h-4 w-4" />
                         </IconButton>
-                      </Link>
-                    </Tooltip>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                      </Tooltip>
+                      <Tooltip content="Imprimer">
+                        <Link
+                          to={`/invoice/${reservation.numReservation}/${reservation.idClient}/${reservation.matricule}`}
+                        >
+                          <IconButton variant="text">
+                            <HiOutlinePrinter className="h-5 w-5" />
+                          </IconButton>
+                        </Link>
+                      </Tooltip>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </CardBody>
       <CardFooter className=" border-t border-blue-gray-200 bg-blue-gray-50 p-4">
         <Typography variant="small" color="blue-gray" className="font-normal">
